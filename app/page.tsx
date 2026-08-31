@@ -1,25 +1,27 @@
+import { CTA } from "@/components/home/CTA";
+import { CareerPaths } from "@/components/home/CareerPaths";
+import { FAQ } from "@/components/home/FAQ";
+import { Hero } from "@/components/home/Hero";
+import { LearningProcess } from "@/components/home/LearningProcess";
+import { Testimonials } from "@/components/home/Testimonials";
+import { WhyTechSkillHub } from "@/components/home/WhyTechSkillHub";
+import { Footer } from "@/components/layout/Footer";
+import { Navbar } from "@/components/layout/Navbar";
+
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white text-slate-900">
-      <section className="h-screen flex items-center justify-center border-b">
-        <h1 className="text-6xl font-bold">TechSkill Hub</h1>
-      </section>
-
-      <section className="h-screen flex items-center justify-center border-b">
-        <h2 className="text-4xl font-semibold">Hero Section</h2>
-      </section>
-
-      <section className="h-screen flex items-center justify-center border-b">
-        <h2 className="text-4xl font-semibold">Career Paths</h2>
-      </section>
-
-      <section className="h-screen flex items-center justify-center border-b">
-        <h2 className="text-4xl font-semibold">Student Success</h2>
-      </section>
-
-      <section className="h-screen flex items-center justify-center">
-        <h2 className="text-4xl font-semibold">Footer</h2>
-      </section>
-    </main>
+    <>
+      <Navbar />
+      <main className="flex-1">
+        <Hero />
+        <WhyTechSkillHub />
+        <CareerPaths />
+        <LearningProcess />
+        <Testimonials />
+        <FAQ />
+        <CTA />
+      </main>
+      <Footer />
+    </>
   );
 }
