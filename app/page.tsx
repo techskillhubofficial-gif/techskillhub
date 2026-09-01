@@ -2,6 +2,7 @@ import { CTA } from "@/components/home/CTA";
 import { CareerPaths } from "@/components/home/CareerPaths";
 import { FAQ } from "@/components/home/FAQ";
 import { Hero } from "@/components/home/Hero";
+import { HiringPartners } from "@/components/home/HiringPartners";
 import { LearningProcess } from "@/components/home/LearningProcess";
 import { Testimonials } from "@/components/home/Testimonials";
 import { WhyTechSkillHub } from "@/components/home/WhyTechSkillHub";
@@ -12,15 +13,18 @@ export default function Home() {
   return (
     <>
       <Navbar />
+
       <main className="flex-1">
         <Hero />
         <WhyTechSkillHub />
         <CareerPaths />
         <LearningProcess />
+        <HiringPartners />
         <Testimonials />
         <FAQ />
         <CTA />
       </main>
+
       <Footer />
     </>
   );
