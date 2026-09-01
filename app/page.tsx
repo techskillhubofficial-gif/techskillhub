@@ -1,28 +1,61 @@
-import { CTA } from "@/components/home/CTA";
-import { CareerPaths } from "@/components/home/CareerPaths";
-import { FAQ } from "@/components/home/FAQ";
-import { Hero } from "@/components/home/Hero";
-import { HiringPartners } from "@/components/home/HiringPartners";
-import { LearningProcess } from "@/components/home/LearningProcess";
-import { Testimonials } from "@/components/home/Testimonials";
-import { WhyTechSkillHub } from "@/components/home/WhyTechSkillHub";
-import { Footer } from "@/components/layout/Footer";
 import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
+
+import { Hero } from "@/components/home/Hero";
+import { WhyTechSkillHub } from "@/components/home/WhyTechSkillHub";
+import { CareerPaths } from "@/components/home/CareerPaths";
+import { LearningProcess } from "@/components/home/LearningProcess";
+
+import { FounderMission } from "@/components/home/FounderMission";
+import { Founder } from "@/components/home/Founder";
+
+import { WhyDifferent } from "@/components/home/WhyDifferent";
+import { Projects } from "@/components/home/Projects";
+import { Curriculum } from "@/components/home/Curriculum";
+
+import { FAQ } from "@/components/home/FAQ";
+import { Consultation } from "@/components/home/Consultation";
 
 export default function Home() {
   return (
     <>
       <Navbar />
 
-      <main className="flex-1">
+      <main className="flex-1 overflow-x-hidden">
+
+        {/* Hero */}
         <Hero />
+
+        {/* Why TechSkill Hub */}
         <WhyTechSkillHub />
+
+        {/* Career Programs */}
         <CareerPaths />
+
+        {/* Learning Journey */}
         <LearningProcess />
-        <HiringPartners />
-        <Testimonials />
+
+        {/* Founder's Vision */}
+        <FounderMission />
+
+        {/* Meet The Founders */}
+        <Founder />
+
+        {/* Why We're Different */}
+        <WhyDifferent />
+
+        {/* Portfolio Projects */}
+        <Projects />
+
+        {/* Curriculum */}
+        <Curriculum />
+
+        {/* Frequently Asked Questions */}
         <FAQ />
-        <CTA />
+
+        {/* Final CTA */}
+        <Consultation />
+
       </main>
 
       <Footer />

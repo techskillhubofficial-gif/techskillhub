@@ -27,10 +27,22 @@ import {
 import { cn } from "@/lib/utils";
 
 const STATS = [
-  { value: "10,000+", label: "Students", icon: Users },
-  { value: "150+", label: "Hiring Partners", icon: Building2 },
-  { value: "95%", label: "Placement Assistance", icon: BadgeCheck },
-] as const;
+  {
+    value: "4",
+    label: "Flagship Programs",
+    icon: Users,
+  },
+  {
+    value: "9 Months",
+    label: "Live Learning Journey",
+    icon: BadgeCheck,
+  },
+  {
+    value: "100%",
+    label: "Project Based",
+    icon: Building2,
+  },
+];
 
 const COURSES: {
   title: string;
@@ -41,29 +53,29 @@ const COURSES: {
 }[] = [
   {
     title: "Full Stack Development",
-    description: "Projects · Mentorship",
-    progress: "78%",
+    description: "Building E-Commerce Website",
+    progress: "Week 5 / 36",
     icon: Code2,
     accent: "from-sky-500/15 to-indigo-500/10",
   },
   {
     title: "Data Analytics",
-    description: "Dashboards · SQL",
-    progress: "64%",
+    description: "SQL & Power BI Live Class",
+    progress: "Live Today",
     icon: BarChart3,
     accent: "from-emerald-500/15 to-teal-500/10",
   },
   {
     title: "Cloud Computing",
-    description: "Deploy · Scale",
-    progress: "52%",
+    description: "Deploy Portfolio Project",
+    progress: "New Assignment",
     icon: Cloud,
     accent: "from-violet-500/15 to-fuchsia-500/10",
   },
   {
     title: "AI & Machine Learning",
-    description: "Models · Workflows",
-    progress: "41%",
+    description: "AI Career Portfolio",
+    progress: "Portfolio Ready",
     icon: Brain,
     accent: "from-amber-500/15 to-orange-500/10",
   },
@@ -121,16 +133,24 @@ function CourseMockCard({
               <Icon className="size-4 text-foreground" aria-hidden="true" />
             </div>
             <CardTitle className="text-[0.95rem] leading-snug">{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
+            <CardDescription className="mt-1 text-xs text-muted-foreground">
+  {description}
+</CardDescription>
+
+<div className="mt-4 flex items-center justify-between">
+  <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary">
+    {progress}
+  </span>
+
+  <span className="text-[10px] font-medium text-muted-foreground">
+    Active
+  </span>
+</div>
           </CardHeader>
-          <CardContent>
-            <div className="h-1.5 overflow-hidden rounded-full bg-foreground/10">
-              <div
-                className="h-full rounded-full bg-foreground/70"
-                style={{ width: progress }}
-              />
-            </div>
-          </CardContent>
+          
+          <CardContent className="pt-4">
+  <div className="h-px w-full bg-border" />
+</CardContent>
         </Card>
       </motion.div>
     </motion.div>
@@ -147,6 +167,7 @@ function HeroDashboard({ reduceMotion }: { reduceMotion: boolean }) {
         aria-hidden="true"
         className="pointer-events-none absolute -inset-8 -z-10 rounded-[2rem] bg-gradient-to-br from-primary/8 via-transparent to-muted/60 blur-2xl"
       />
+
       <Card className="rounded-3xl bg-card/80 py-0 shadow-2xl ring-foreground/10 backdrop-blur-sm">
         <CardHeader className="flex flex-row items-center gap-3 border-b px-5 py-4">
           <div className="flex gap-1.5" aria-hidden="true">
@@ -154,30 +175,101 @@ function HeroDashboard({ reduceMotion }: { reduceMotion: boolean }) {
             <span className="size-2.5 rounded-full bg-foreground/10" />
             <span className="size-2.5 rounded-full bg-foreground/10" />
           </div>
+
           <CardTitle className="text-sm font-medium text-muted-foreground">
-            Learning dashboard
+            Learning Dashboard
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-4 sm:p-5">
-          <motion.div
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4"
-            variants={{
-              hidden: {},
-              show: { transition: { staggerChildren: 0.12 } },
-            }}
-          >
-            {COURSES.map((course, index) => (
-              <CourseMockCard
-                key={course.title}
-                {...course}
-                delay={index * 0.35}
-                reduceMotion={reduceMotion}
-              />
-            ))}
-          </motion.div>
-        </CardContent>
-      </Card>
-    </motion.div>
+
+  <CardContent className="space-y-5 p-5">
+
+  {/* Dashboard Summary */}
+  <div className="rounded-2xl border bg-background/70 p-5 shadow-sm">
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          Today's Progress
+        </p>
+
+        <h3 className="mt-1 text-xl font-bold">
+          CodeForge • Week 5
+        </h3>
+
+        <p className="mt-1 text-sm text-muted-foreground">
+          Continue building your E-Commerce project.
+        </p>
+      </div>
+
+      <span className="rounded-full bg-green-500/10 px-3 py-1 text-xs font-semibold text-green-600">
+        ● LIVE
+      </span>
+    </div>
+
+    <div className="mt-6">
+      <div className="mb-2 flex justify-between text-xs">
+        <span className="text-muted-foreground">
+          Overall Progress
+        </span>
+
+        <span className="font-semibold">
+          38%
+        </span>
+      </div>
+
+      <div className="h-2 overflow-hidden rounded-full bg-muted">
+        <div className="h-full w-[38%] rounded-full bg-primary transition-all duration-500" />
+      </div>
+    </div>
+
+    <div className="mt-6 grid grid-cols-3 gap-3">
+      <div className="rounded-xl border bg-background p-3 text-center">
+        <p className="text-lg font-bold">18</p>
+        <p className="text-xs text-muted-foreground">
+          Lessons
+        </p>
+      </div>
+
+      <div className="rounded-xl border bg-background p-3 text-center">
+        <p className="text-lg font-bold">5</p>
+        <p className="text-xs text-muted-foreground">
+          Projects
+        </p>
+      </div>
+
+      <div className="rounded-xl border bg-background p-3 text-center">
+        <p className="text-lg font-bold">3</p>
+        <p className="text-xs text-muted-foreground">
+          Certificates
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {/* Course Cards */}
+  <motion.div
+    className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4"
+    variants={{
+      hidden: {},
+      show: {
+        transition: {
+          staggerChildren: 0.12,
+        },
+      },
+    }}
+  >
+    {COURSES.map((course, index) => (
+      <CourseMockCard
+        key={course.title}
+        {...course}
+        delay={index * 0.35}
+        reduceMotion={reduceMotion}
+      />
+    ))}
+  </motion.div>
+
+</CardContent>
+</Card>
+</motion.div>
   );
 }
 
@@ -189,7 +281,7 @@ export function Hero({ className }: HeroProps) {
       aria-labelledby="hero-heading"
       className={cn(
         "relative overflow-hidden border-b border-border",
-        className,
+        className
       )}
     >
       <Container className="flex min-h-[calc(100dvh-5rem)] max-w-[1280px] flex-col justify-center py-16 md:py-20">
@@ -199,7 +291,10 @@ export function Hero({ className }: HeroProps) {
           variants={{
             hidden: {},
             show: {
-              transition: { staggerChildren: 0.12, delayChildren: 0.05 },
+              transition: {
+                staggerChildren: 0.12,
+                delayChildren: 0.05,
+              },
             },
           }}
           className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16 xl:gap-20"
@@ -219,15 +314,15 @@ export function Hero({ className }: HeroProps) {
               variants={fadeUp}
               className="mt-5 max-w-xl text-4xl font-semibold tracking-tight text-balance text-foreground sm:text-5xl lg:text-[3.25rem] lg:leading-[1.1]"
             >
-              Build Job-Ready Tech Skills That Companies Actually Hire For
+              Launch Your Career With Industry-Led, AI-Powered Learning
             </motion.h1>
 
             <motion.p
               variants={fadeUp}
               className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground md:text-lg"
             >
-              Learn from industry experts through real-world projects,
-              AI-powered learning paths, mentorship, and placement assistance.
+              Master in-demand skills through live classes, real business projects,
+              1:1 mentorship, AI-powered workflows, and a portfolio that gets you hired.
             </motion.p>
 
             <motion.div
@@ -238,11 +333,12 @@ export function Hero({ className }: HeroProps) {
                 size="lg"
                 className="h-11 px-5"
                 nativeButton={false}
-                render={<Link href="/get-started" />}
+                render={<Link href="/Book FREE Career Consultation" />}
               >
                 Get Started
                 <ArrowRight data-icon="inline-end" />
               </Button>
+
               <Button
                 variant="outline"
                 size="lg"
@@ -250,7 +346,7 @@ export function Hero({ className }: HeroProps) {
                 nativeButton={false}
                 render={<Link href="/courses" />}
               >
-                Explore Courses
+                View Career Programs
               </Button>
             </motion.div>
 
@@ -263,22 +359,23 @@ export function Hero({ className }: HeroProps) {
 
                 return (
                   <div key={stat.label} className="min-w-0">
-                    <dt className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                      <Icon className="size-3.5" aria-hidden="true" />
+                    <dt className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <Icon className="size-4" />
                       {stat.label}
                     </dt>
-                    <dd className="mt-1 text-xl font-semibold tracking-tight text-foreground">
+
+                    <dd className="mt-2 text-2xl font-bold text-foreground">
                       {stat.value}
                     </dd>
                   </div>
                 );
               })}
-            </motion.dl>
-          </div>
+                      </motion.dl>
+        </div>
 
-          <HeroDashboard reduceMotion={reduceMotion} />
-        </motion.div>
-      </Container>
-    </section>
-  );
+        <HeroDashboard reduceMotion={reduceMotion} />
+      </motion.div>
+    </Container>
+  </section>
+);
 }
