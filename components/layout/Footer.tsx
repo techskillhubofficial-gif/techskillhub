@@ -1,210 +1,74 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Mail, MapPin, Phone } from "lucide-react";
+import Image from "next/image";
+
+import {
+  FiMail,
+  FiPhone,
+  FiMapPin,
+  FiClock,
+} from "react-icons/fi";
+
+import {
+  FaInstagram,
+  FaLinkedin,
+  FaFacebook,
+  FaYoutube,
+} from "react-icons/fa";
 
 import { Container } from "@/components/layout/Container";
-import { Button } from "@/components/ui/button";
-
-const PROGRAMS = [
-  { name: "GrowthX", href: "/courses" },
-  { name: "CodeForge", href: "/courses" },
-  { name: "DesignSphere", href: "/courses" },
-  { name: "InsightIQ", href: "/courses" },
-];
-
-const COMPANY = [
-  { name: "About", href: "/about" },
-  { name: "Founders", href: "/about#founders" },
-  { name: "Projects", href: "/projects" },
-  { name: "Curriculum", href: "/curriculum" },
-  { name: "Contact", href: "/contact" },
-];
-
-const LEGAL = [
-  { name: "Privacy Policy", href: "/privacy-policy" },
-  { name: "Terms & Conditions", href: "/terms" },
-  { name: "Refund Policy", href: "/refund-policy" },
-];
 
 export function Footer() {
   return (
-    <footer className="border-t bg-background">
+    <footer className="relative bg-gradient-to-b from-slate-900 via-slate-950 to-black pt-20 text-white">
+
+      {/* Background Glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.18),transparent_45%),radial-gradient(circle_at_bottom_left,_rgba(14,165,233,0.12),transparent_40%)]" />
 
       {/* CTA */}
 
-      <section className="border-b">
-        <Container className="py-20">
-          <div className="overflow-hidden rounded-3xl bg-gradient-to-r from-primary via-primary to-primary/90 px-8 py-16 text-center text-primary-foreground shadow-2xl">
+      <Container className="relative">
 
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-primary-foreground/70">
-              Ready To Build Your Future?
-            </p>
+      <div className="relative mt-0 rounded-[32px] bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 px-10 py-16 shadow-2xl">
 
-            <h2 className="mx-auto mt-4 max-w-3xl text-4xl font-bold leading-tight md:text-5xl">
-              Learn. Build. Get Hired.
-            </h2>
+          <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
 
-            <p className="mx-auto mt-5 max-w-2xl text-lg text-primary-foreground/80">
-              Join TechSkill Hub and build real-world skills through live
-              mentorship, AI-powered learning and industry projects.
-            </p>
+          <div className="relative flex flex-col items-center justify-between gap-8 lg:flex-row">
 
-            <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
+            <div className="max-w-2xl">
 
-              <Button
-                size="lg"
-                nativeButton={false}
-                render={<Link href="/contact" />}
-                className="bg-white text-primary hover:bg-white/90"
+              <span className="rounded-full bg-white/20 px-4 py-2 text-sm font-semibold tracking-wide text-blue-50">
+                🚀 Admissions Open 2026
+              </span>
+
+              <h2 className="mt-6 text-4xl font-black leading-tight lg:text-5xl">
+                Start Your AI Career Journey Today
+              </h2>
+
+              <p className="mt-5 max-w-xl text-lg leading-8 text-blue-100">
+                Learn from industry experts, build real-world projects,
+                master AI tools, earn certifications and become
+                future-ready with TechSkill Hub.
+              </p>
+
+            </div>
+
+            <div className="flex flex-wrap gap-4">
+
+              <Link
+                href="/consultation"
+                className="rounded-xl bg-white px-8 py-4 font-semibold text-blue-700 transition hover:scale-105"
               >
                 Book Free Consultation
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
+              </Link>
 
-              <Button
-                size="lg"
-                variant="secondary"
-                nativeButton={false}
-                render={<Link href="/courses" />}
+              <Link
+                href="/programs"
+                className="rounded-xl border border-white/40 px-8 py-4 font-semibold text-white transition hover:bg-white/10"
               >
                 Explore Programs
-              </Button>
-
-            </div>
-
-          </div>
-        </Container>
-      </section>
-
-      {/* Main Footer */}
-
-      <Container className="py-20">
-
-        <div className="grid gap-12 lg:grid-cols-[2fr_1fr_1fr_1fr]">
-
-          {/* Brand */}
-
-          <div>
-
-            <h3 className="text-3xl font-bold">
-              TechSkill Hub
-            </h3>
-
-            <p className="mt-5 max-w-md leading-7 text-muted-foreground">
-              India's AI-powered career accelerator helping students build
-              practical skills through mentorship, live learning and real
-              industry projects.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-
-              <Link
-                href="#"
-                className="rounded-full border px-4 py-2 text-sm transition hover:bg-primary hover:text-primary-foreground"
-              >
-                LinkedIn
               </Link>
-
-              <Link
-                href="#"
-                className="rounded-full border px-4 py-2 text-sm transition hover:bg-primary hover:text-primary-foreground"
-              >
-                Instagram
-              </Link>
-
-              <Link
-                href="#"
-                className="rounded-full border px-4 py-2 text-sm transition hover:bg-primary hover:text-primary-foreground"
-              >
-                YouTube
-              </Link>
-
-              <Link
-                href="#"
-                className="rounded-full border px-4 py-2 text-sm transition hover:bg-primary hover:text-primary-foreground"
-              >
-                GitHub
-              </Link>
-
-            </div>
-
-          </div>
-
-          {/* Programs */}
-
-          <div>
-
-            <h4 className="mb-5 font-semibold">
-              Programs
-            </h4>
-
-            <ul className="space-y-3">
-
-              {PROGRAMS.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    href={item.href}
-                    className="text-muted-foreground transition hover:text-primary"
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-
-            </ul>
-
-          </div>
-
-          {/* Company */}
-
-          <div>
-
-            <h4 className="mb-5 font-semibold">
-              Company
-            </h4>
-
-            <ul className="space-y-3">
-
-              {COMPANY.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    href={item.href}
-                    className="text-muted-foreground transition hover:text-primary"
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              ))}
-
-            </ul>
-
-          </div>
-
-          {/* Contact */}
-
-          <div>
-
-            <h4 className="mb-5 font-semibold">
-              Contact
-            </h4>
-
-            <div className="space-y-5 text-muted-foreground">
-
-              <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 text-primary" />
-                <span>hello@techskillhub.in</span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Phone className="h-5 w-5 text-primary" />
-                <span>+91 XXXXX XXXXX</span>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <MapPin className="mt-1 h-5 w-5 text-primary" />
-                <span>India</span>
-              </div>
 
             </div>
 
@@ -212,36 +76,294 @@ export function Footer() {
 
         </div>
 
-      </Container>
+        {/* Main Footer */}
 
-      {/* Bottom */}
+        <div className="grid gap-14 py-20 lg:grid-cols-12">
 
-      <div className="border-t">
+          {/* Brand */}
 
-        <Container className="flex flex-col items-center justify-between gap-4 py-6 text-sm text-muted-foreground md:flex-row">
+          <div className="lg:col-span-5">
 
-          <p>
-            © {new Date().getFullYear()} TechSkill Hub. All rights reserved.
-          </p>
+          <Image
+  src="/logo/Full-logo.png"
+  alt="TechSkill Hub"
+  width={240}
+  height={70}
+  priority
+  style={{
+    width: "220px",
+    height: "auto",
+  }}
+/>
+            <p className="mt-8 max-w-md text-[16px] leading-8 text-slate-400">
+              TechSkill Hub is India's AI-powered career accelerator
+              helping students, graduates, professionals and
+              entrepreneurs build future-ready careers through live
+              mentorship, practical learning, AI-powered education,
+              real-world projects and industry-focused programs.
+            </p>
 
-          <div className="flex flex-wrap gap-6">
+            <div className="mt-10 flex items-center gap-4">
 
-            {LEGAL.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="hover:text-primary"
+              <a
+                href="#"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 transition hover:bg-blue-600"
               >
-                {item.name}
-              </Link>
-            ))}
+                <FaLinkedin size={18} />
+              </a>
+
+              <a
+                href="#"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 transition hover:bg-pink-600"
+              >
+                <FaInstagram size={18} />
+              </a>
+
+              <a
+                href="#"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 transition hover:bg-blue-700"
+              >
+                <FaFacebook size={18} />
+              </a>
+
+              <a
+                href="#"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 transition hover:bg-red-600"
+              >
+                <FaYoutube size={18} />
+              </a>
+
+            </div>
 
           </div>
 
-        </Container>
+          {/* Programs */}
 
-      </div>
+          <div className="lg:col-span-2">
 
-    </footer>
-  );
+            <h3 className="mb-6 text-lg font-bold">
+              Programs
+            </h3>
+
+            <ul className="space-y-4 text-slate-400">
+
+              <li>
+                <Link href="/programs/codeforge" className="hover:text-white">
+                  CodeForge™
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/programs/insightiq" className="hover:text-white">
+                  InsightIQ™
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/programs/designsphere" className="hover:text-white">
+                  DesignSphere™
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/programs/growthx" className="hover:text-white">
+                  GrowthX™
+                </Link>
+              </li>
+
+            </ul>
+
+          </div>
+
+          {/* Company */}
+
+          <div className="lg:col-span-2">
+
+            <h3 className="mb-6 text-lg font-bold">
+              Company
+            </h3>
+
+            <ul className="space-y-4 text-slate-400">
+
+              <li>
+                <Link href="/about" className="hover:text-white">
+                  About Us
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/programs" className="hover:text-white">
+                  Programs
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/contact" className="hover:text-white">
+                  Contact
+                </Link>
+              </li>
+
+              <li>
+                <Link href="/consultation" className="hover:text-white">
+                  Book Consultation
+                </Link>
+              </li>
+
+            </ul>
+
+          </div>
+                    {/* Contact */}
+
+                    <div className="lg:col-span-3">
+
+<h3 className="mb-6 text-lg font-bold">
+  Contact
+</h3>
+
+<div className="space-y-6">
+
+  <div className="flex items-start gap-4">
+
+    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-blue-400">
+      <FiMail size={18} />
+    </div>
+
+    <div>
+      <h4 className="font-semibold text-white">
+        Email
+      </h4>
+
+      <a
+        href="mailto:techskillhubofficial@gmail.com"
+        className="text-slate-400 transition hover:text-white"
+      >
+        techskillhubofficial@gmail.com
+      </a>
+    </div>
+
+  </div>
+
+  <div className="flex items-start gap-4">
+
+    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-blue-400">
+      <FiPhone size={18} />
+    </div>
+
+    <div>
+
+      <h4 className="font-semibold text-white">
+        Admissions & Enquiries
+      </h4>
+
+      <a
+        href="tel:+918769951887"
+        className="block text-slate-400 transition hover:text-white"
+      >
+        +91 87699 51887
+      </a>
+
+      <a
+        href="tel:+919528404249"
+        className="block text-slate-400 transition hover:text-white"
+      >
+        +91 95284 04249
+      </a>
+
+    </div>
+
+  </div>
+
+  <div className="flex items-start gap-4">
+
+    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-blue-400">
+      <FiMapPin size={18} />
+    </div>
+
+    <div>
+
+      <h4 className="font-semibold text-white">
+        Availability
+      </h4>
+
+      <p className="text-slate-400">
+        Live Online Programs
+      </p>
+
+      <p className="text-slate-400">
+        Serving Students Across India
+      </p>
+
+    </div>
+
+  </div>
+
+  <div className="flex items-start gap-4">
+
+    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-blue-400">
+      <FiClock size={18} />
+    </div>
+
+    <div>
+
+      <h4 className="font-semibold text-white">
+        Working Hours
+      </h4>
+
+      <p className="text-slate-400">
+        Monday – Saturday
+      </p>
+
+      <p className="text-slate-400">
+        9:00 AM – 7:00 PM (IST)
+      </p>
+
+    </div>
+
+  </div>
+
+</div>
+
+</div>
+
+</div>
+
+{/* Bottom Bar */}
+
+<div className="flex flex-col items-center justify-between gap-5 border-t border-slate-800 py-8 text-sm text-slate-500 md:flex-row">
+
+<p>
+© 2026 <span className="font-semibold text-white">TechSkill Hub</span>. All Rights Reserved.
+</p>
+
+<div className="flex flex-wrap items-center gap-6">
+
+<Link
+  href="/privacy-policy"
+  className="transition hover:text-white"
+>
+  Privacy Policy
+</Link>
+
+<Link
+  href="/terms"
+  className="transition hover:text-white"
+>
+  Terms & Conditions
+</Link>
+
+<Link
+  href="/refund-policy"
+  className="transition hover:text-white"
+>
+  Refund Policy
+</Link>
+
+</div>
+
+</div>
+
+</Container>
+
+</footer>
+);
 }

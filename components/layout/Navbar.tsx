@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { GraduationCap, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 
 import { Container } from "@/components/layout/Container";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home" },
-  { href: "/courses", label: "Courses" },
+  { href: "/programs", label: "Programs" },
   { href: "/corporate-training", label: "Corporate Training" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
@@ -51,12 +52,22 @@ function Logo({
         className,
       )}
     >
-      <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-        <GraduationCap className="size-5" aria-hidden="true" />
-      </span>
-      <span className="text-base font-semibold tracking-tight text-foreground">
-        TechSkill Hub
-      </span>
+      <Image
+  src="/logo/Full-logo.png"
+  alt="TechSkill Hub"
+  width={400}
+  height={105}
+  priority
+  className="
+        h-[60px]
+        w-auto
+        object-contain
+        transition-transform
+        duration-300
+        hover:scale-[1.02]
+        lg:h-[72px]
+    "
+/>
     </Link>
   );
 }
@@ -84,7 +95,8 @@ function NavLink({
         "after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:scale-x-0 after:bg-foreground after:transition-transform after:duration-300 after:ease-out",
         "hover:after:scale-x-100 focus-visible:text-foreground focus-visible:after:scale-x-100",
         "focus-visible:ring-3 focus-visible:ring-ring/50",
-        active && "text-foreground after:scale-x-100",
+        active &&
+"text-blue-600 after:bg-blue-600 after:scale-x-100",
         className,
       )}
     >
@@ -98,13 +110,39 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 shadow-[0_1px_0_0_oklch(0_0_0/0.04)] backdrop-blur-xl supports-backdrop-filter:bg-background/55">
-      <Container className="flex h-20 items-center justify-between gap-4">
-        <Logo />
+    <header
+className="
+sticky
+top-0
+z-50
+border-b
+border-slate-200/70
+bg-white/80
+backdrop-blur-md
+supports-[backdrop-filter]:bg-white/70
+transition-all
+duration-300
+"
+>
+<Container
+  className="
+    flex
+    h-[80px]
+    items-center
+    justify-between
+  "
+>
+    <Logo />
 
         <nav
           aria-label="Primary"
-          className="hidden items-center gap-7 lg:flex"
+          className="
+hidden
+items-center
+gap-9
+xl:gap-10
+lg:flex
+"
         >
           {NAV_ITEMS.map((item) => (
             <NavLink
@@ -116,24 +154,56 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2 lg:flex">
-          <Button
-            variant="outline"
-            size="lg"
-            className="h-10 px-4 transition-colors duration-200"
-            nativeButton={false}
-            render={<Link href="/login" />}
-          >
-            Login
-          </Button>
-          <Button
-            size="lg"
-            className="h-10 px-4 transition-colors duration-200"
-            nativeButton={false}
-            render={<Link href="/get-started" />}
-          >
-            Get Started
-          </Button>
+        <div
+className="
+hidden
+items-center
+gap-3
+xl:gap-4
+lg:flex
+"
+>
+        
+        <Button
+  variant="outline"
+  size="lg"
+  className="h-10 px-5"
+  nativeButton={false}
+  render={
+    <Link
+      href="/career-guidance"
+      onClick={() => setOpen(false)}
+    />
+  }
+>
+  Free Career Guidance
+</Button>
+
+<Button
+size="lg"
+className="
+h-10
+rounded-xl
+bg-blue-600
+px-6
+font-semibold
+text-white
+shadow-md
+transition-all
+duration-300
+hover:-translate-y-0.5
+hover:bg-blue-700
+hover:shadow-lg
+"
+nativeButton={false}
+render={
+<Link
+href="/consultation"
+/>
+}
+>
+Book Consultation
+</Button>
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -149,7 +219,11 @@ export function Navbar() {
           >
             <Menu aria-hidden="true" />
           </SheetTrigger>
-          <SheetContent side="right" className="w-full max-w-xs gap-0">
+          <SheetContent side="right" className="
+w-full
+max-w-[380px]
+gap-0
+">
             <SheetHeader className="border-b border-border">
               <SheetTitle className="sr-only">Navigation</SheetTitle>
               <SheetDescription className="sr-only">
@@ -158,7 +232,7 @@ export function Navbar() {
               <Logo onNavigate={() => setOpen(false)} />
             </SheetHeader>
 
-            <nav aria-label="Mobile" className="flex flex-col gap-1 px-4 py-4">
+            <nav aria-label="Mobile" className="flex flex-col gap-1 px-6 py-6">
               {NAV_ITEMS.map((item) => {
                 const active = isActivePath(pathname, item.href);
 
@@ -188,21 +262,24 @@ export function Navbar() {
                 className="h-10 w-full transition-colors duration-200"
                 nativeButton={false}
                 render={
-                  <Link href="/login" onClick={() => setOpen(false)} />
+                  <Link href="/student-portal" onClick={() => setOpen(false)} />
                 }
               >
-                Login
+                Student Portal
               </Button>
               <Button
-                size="lg"
-                className="h-10 w-full transition-colors duration-200"
-                nativeButton={false}
-                render={
-                  <Link href="/get-started" onClick={() => setOpen(false)} />
-                }
-              >
-                Get Started
-              </Button>
+  size="lg"
+  className="h-11 rounded-xl bg-blue-600 px-6 font-semibold hover:bg-blue-700"
+  nativeButton={false}
+  render={
+    <Link
+      href="/contact"
+      onClick={() => setOpen(false)}
+    />
+  }
+>
+  Apply Now
+</Button>
             </SheetFooter>
           </SheetContent>
         </Sheet>

@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  MENTOR
+  ADMIN
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id       String @id @default(cuid())
+  name     String
+  email    String @unique
+  password String
+
+  role Role @default(STUDENT)
+
+  image String?
+  bio   String?
+  phone String?
+
+  emailVerified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses      Course[]      @relation("InstructorCourses")
+  enrollments  Enrollment[]
+  certificates Certificate[]
+}
+
+model Course {
+  id String @id @default(cuid())
+
+  title       String
+  slug        String @unique
+  description String
+
+  thumbnail String?
+  level     CourseLevel
+
+  duration String
+  price    Float
+
+  published Boolean @default(false)
+
+  instructorId String
+  instructor   User   @relation("InstructorCourses", fields: [instructorId], references: [id])
+
+  lessons      Lesson[]
+  enrollments  Enrollment[]
+  certificates Certificate[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  assignments Assignment[]
+}
+
+model Lesson {
+  id String @id @default(cuid())
+
+  title       String
+  description String?
+
+  videoUrl String?
+
+  order Int
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Enrollment {
+  id String @id @default(cuid())
+
+  userId   String
+  courseId String
+
+  progress Int @default(0)
+
+  status EnrollmentStatus @default(ACTIVE)
+
+  enrolledAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model Assignment {
+  id String @id @default(cuid())
+
+  title       String
+  description String
+
+  dueDate DateTime?
+
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model Certificate {
+  id String @id @default(cuid())
+
+  certificateNo String @unique
+
+  userId   String
+  courseId String
+
+  issuedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
