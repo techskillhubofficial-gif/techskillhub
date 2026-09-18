@@ -7,6 +7,11 @@ import {
 
 import { prisma } from "@/lib/prisma";
 import { getTgnContext, canManageNetwork } from "@/lib/tgn/authorization";
+import {
+  createAccountSetupToken,
+  getAccountSetupUrl,
+  sendTgnAccountSetupEmail,
+} from "@/lib/tgn/account-setup";
 
 export const dynamic = "force-dynamic";
 
@@ -252,6 +257,145 @@ export async function PATCH(
 
     if (!application) {
       return errorResponse("TGN application not found.", 404);
+    }
+
+    if (body?.action === "UPDATE_EMAIL") {
+      const nextEmail = clean(body?.email)?.toLowerCase() ?? null;
+
+      if (!nextEmail || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(nextEmail)) {
+        return errorResponse("Please enter a valid email address.");
+      }
+
+      const activeStatuses = [
+        TgnApplicationStatus.SUBMITTED,
+        TgnApplicationStatus.UNDER_REVIEW,
+        TgnApplicationStatus.SHORTLISTED,
+        TgnApplicationStatus.INTERVIEW,
+        TgnApplicationStatus.APPROVED,
+        TgnApplicationStatus.ONBOARDING,
+        TgnApplicationStatus.ORIENTATION,
+        TgnApplicationStatus.ACTIVE,
+      ];
+
+      const duplicateApplication = await prisma.tgnApplication.findFirst({
+        where: {
+          id: { not: id },
+          email: {
+            equals: nextEmail,
+            mode: "insensitive",
+          },
+          status: {
+            in: activeStatuses,
+          },
+        },
+        select: {
+          applicationNo: true,
+          status: true,
+        },
+      });
+
+      if (duplicateApplication) {
+        return errorResponse(
+          `That email is already linked to active TGN application ${duplicateApplication.applicationNo}.`,
+          409,
+        );
+      }
+
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          email: {
+            equals: nextEmail,
+            mode: "insensitive",
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (existingUser && existingUser.id !== application.userId) {
+        return errorResponse(
+          "That email address is already linked to another TechSkillHub account.",
+          409,
+        );
+      }
+
+      const updatedApplication = await prisma.$transaction(async (tx) => {
+        const updatedRecord = await tx.tgnApplication.update({
+          where: { id },
+          data: {
+            email: nextEmail,
+          },
+        });
+
+        if (application.userId) {
+          await tx.user.update({
+            where: {
+              id: application.userId,
+            },
+            data: {
+              email: nextEmail,
+              emailVerified: false,
+            },
+          });
+        }
+
+        await tx.tgnAuditEvent.create({
+          data: {
+            action: TgnAuditAction.APPLICATION_REVIEWED,
+            applicationId: application.id,
+            actorUserId: tgnContext.userId,
+            memberId: null,
+            metadata: {
+              action: "EMAIL_UPDATED",
+              previousEmail: application.email,
+              newEmail: nextEmail,
+            },
+          },
+        });
+
+        return updatedRecord;
+      });
+
+      let activationEmailSent = false;
+
+      if (application.userId) {
+        try {
+          const rawToken = await createAccountSetupToken(
+            application.userId,
+          );
+
+          const setupUrl = getAccountSetupUrl(rawToken);
+
+          const roleLabel =
+            application.memberType === "TEAM_LEADER"
+              ? "Team Leader"
+              : "Growth Executive";
+
+          await sendTgnAccountSetupEmail(
+            nextEmail,
+            application.name,
+            roleLabel,
+            setupUrl,
+          );
+
+          activationEmailSent = true;
+        } catch (emailError) {
+          console.error(
+            "[TGN] Email correction activation send failed:",
+            emailError,
+          );
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        emailSent: activationEmailSent,
+        message: activationEmailSent
+          ? "Email updated successfully. A new account activation email was sent."
+          : "Email updated successfully, but the activation email could not be sent. Use the same action again to retry.",
+        application: updatedApplication,
+      });
     }
 
     const targetStatus = body?.status;
