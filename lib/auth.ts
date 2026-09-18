@@ -20,6 +20,7 @@ export const authOptions: NextAuthOptions = {
           label: "Email",
           type: "email",
         },
+
         password: {
           label: "Password",
           type: "password",
@@ -27,24 +28,32 @@ export const authOptions: NextAuthOptions = {
       },
 
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (
+          !credentials?.email ||
+          !credentials?.password
+        ) {
           return null;
         }
 
-        const user = await prisma.user.findUnique({
-          where: {
-            email: credentials.email,
-          },
-        });
+        const email =
+          credentials.email.trim().toLowerCase();
+
+        const user =
+          await prisma.user.findUnique({
+            where: {
+              email,
+            },
+          });
 
         if (!user) {
           return null;
         }
 
-        const validPassword = await compare(
-          credentials.password,
-          user.password
-        );
+        const validPassword =
+          await compare(
+            credentials.password,
+            user.password
+          );
 
         if (!validPassword) {
           return null;
@@ -54,6 +63,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           name: user.name,
           email: user.email,
+          role: user.role,
         };
       },
     }),
@@ -63,14 +73,26 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.role = user.role;
       }
+
       return token;
     },
 
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
+        session.user.id =
+          token.id as string;
+
+        session.user.role =
+          token.role as
+            | "STUDENT"
+            | "MENTOR"
+            | "ADMIN"
+            | "TGN_TEAM_LEADER"
+            | "TGN_EXECUTIVE";
       }
+
       return session;
     },
   },
@@ -79,5 +101,6 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
 
-  secret: process.env.NEXTAUTH_SECRET,
+  secret:
+    process.env.NEXTAUTH_SECRET,
 };

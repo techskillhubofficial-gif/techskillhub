@@ -1,0 +1,298 @@
+import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
+import { getTgnContext, canManageNetwork } from "@/lib/tgn/authorization";
+
+const prisma = new PrismaClient();
+
+const fail = (message: string, status = 400) =>
+  NextResponse.json({ success: false, error: message }, { status });
+
+async function authorized() {
+  const context = await getTgnContext();
+  return context && canManageNetwork(context) ? context : null;
+}
+
+async function evaluate(id: string) {
+  const commission = await prisma.tgnCommission.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      memberId: true,
+      admissionId: true,
+    },
+  });
+
+  if (!commission) return null;
+
+  if (!commission.admissionId)
+    return {
+      eligible: false,
+      reasons: ["Commission has no linked admission."],
+    };
+
+  const admission = await prisma.admission.findUnique({
+    where: { id: commission.admissionId },
+    include: {
+      lead: {
+        select: {
+          tgnSourceMemberId: true,
+          tgnOwnerId: true,
+        },
+      },
+      payments: {
+        where: { status: "VERIFIED" },
+        select: { type: true },
+      },
+    },
+  });
+
+  if (!admission)
+    return {
+      eligible: false,
+      reasons: ["Linked admission was not found."],
+    };
+
+  const reasons: string[] = [];
+
+  if (
+    admission.lead?.tgnSourceMemberId !== commission.memberId &&
+    admission.lead?.tgnOwnerId !== commission.memberId
+  ) {
+    reasons.push("Admission attribution does not match the commission member.");
+  }
+
+  if (!["APPROVED", "ENROLLED"].includes(admission.status))
+    reasons.push("Admission is not approved or enrolled.");
+
+  if (!admission.approvedAt)
+    reasons.push("Admission approval has not been recorded.");
+
+  if (!admission.payments.some((p) => p.type === "REGISTRATION_FEE"))
+    reasons.push("Verified registration payment is missing.");
+
+  if (
+    !admission.payments.some(
+      (p) => p.type === "INSTALLMENT" || p.type === "EMI"
+    )
+  ) {
+    reasons.push("Verified first installment/EMI payment is missing.");
+  }
+
+  if (!admission.userId || !admission.courseId) {
+    reasons.push("Student account or course link is missing.");
+  } else {
+    const enrollment = await prisma.enrollment.findFirst({
+      where: {
+        userId: admission.userId,
+        courseId: admission.courseId,
+        status: { in: ["ACTIVE", "COMPLETED"] },
+      },
+      select: { id: true },
+    });
+
+    if (!enrollment) {
+      reasons.push("Active/completed enrollment is missing.");
+    } else {
+      const lecture = await prisma.lesson.findFirst({
+        where: { courseId: admission.courseId },
+        orderBy: [{ order: "asc" }, { createdAt: "asc" }],
+        select: { id: true },
+      });
+
+      if (!lecture) {
+        reasons.push("The course has no lecture yet.");
+      } else {
+        const attendance = await prisma.lectureAttendance.findUnique({
+          where: {
+            enrollmentId_lessonId: {
+              enrollmentId: enrollment.id,
+              lessonId: lecture.id,
+            },
+          },
+          select: { status: true },
+        });
+
+        if (
+          !attendance ||
+          !["PRESENT", "LATE"].includes(attendance.status)
+        ) {
+          reasons.push(
+            "First lecture attendance has not been confirmed as present/late."
+          );
+        }
+      }
+    }
+  }
+
+  return {
+    eligible: reasons.length === 0,
+    reasons,
+  };
+}
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    if (!(await authorized())) return fail("Unauthorized", 401);
+
+    const { id } = await params;
+
+    const commission = await prisma.tgnCommission.findUnique({
+      where: { id },
+      include: {
+        member: {
+          select: {
+            id: true,
+            memberType: true,
+            status: true,
+            referralCode: true,
+            user: { select: { name: true, email: true } },
+            team: { select: { name: true, code: true } },
+          },
+        },
+      },
+    });
+
+    if (!commission) return fail("Commission not found.", 404);
+
+    return NextResponse.json({
+      success: true,
+      commission: {
+        ...commission,
+        amount: Number(commission.amount),
+      },
+      evaluation: await evaluate(id),
+    });
+  } catch (error) {
+    console.error("TGN commission GET:", error);
+    return fail("Failed to load commission", 500);
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const context = await authorized();
+    if (!context) return fail("Unauthorized", 401);
+
+    const { id } = await params;
+    const body = await request.json();
+    const action = String(body.action ?? "").toUpperCase();
+
+    const commission = await prisma.tgnCommission.findUnique({
+      where: { id },
+    });
+
+    if (!commission) return fail("Commission not found.", 404);
+
+    if (action === "CHECK_ELIGIBILITY") {
+      const result = await evaluate(id);
+
+      if (!result) return fail("Unable to evaluate commission.");
+
+      const updated = await prisma.tgnCommission.update({
+        where: { id },
+        data: {
+          status: result.eligible
+            ? "ELIGIBLE"
+            : commission.status === "ELIGIBLE"
+              ? "PENDING"
+              : commission.status,
+          eligibilityReason: result.eligible
+            ? "All documented TGN commission conditions are satisfied."
+            : result.reasons.join(" "),
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        commission: {
+          ...updated,
+          amount: Number(updated.amount),
+        },
+        evaluation: result,
+      });
+    }
+
+    if (action === "APPROVE") {
+      if (commission.status !== "ELIGIBLE")
+        return fail("Only eligible commissions can be approved.");
+
+      const updated = await prisma.tgnCommission.update({
+        where: { id },
+        data: {
+          status: "APPROVED",
+          approvedAt: new Date(),
+          approvedById: context.userId,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        commission: {
+          ...updated,
+          amount: Number(updated.amount),
+        },
+      });
+    }
+
+    if (action === "MARK_PAID") {
+      if (commission.status !== "APPROVED")
+        return fail("Only approved commissions can be marked paid.");
+
+      const updated = await prisma.tgnCommission.update({
+        where: { id },
+        data: {
+          status: "PAID",
+          paidAt: new Date(),
+          paidById: context.userId,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        commission: {
+          ...updated,
+          amount: Number(updated.amount),
+        },
+      });
+    }
+
+    if (action === "REJECT") {
+      if (["PAID", "REJECTED"].includes(commission.status))
+        return fail("This commission cannot be rejected now.");
+
+      const reason =
+        typeof body.reason === "string" ? body.reason.trim() : "";
+
+      if (!reason) return fail("A rejection reason is required.");
+
+      const updated = await prisma.tgnCommission.update({
+        where: { id },
+        data: {
+          status: "REJECTED",
+          notes: commission.notes
+            ? `${commission.notes}\nRejection: ${reason}`
+            : `Rejection: ${reason}`,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        commission: {
+          ...updated,
+          amount: Number(updated.amount),
+        },
+      });
+    }
+
+    return fail("Unsupported commission action.");
+  } catch (error) {
+    console.error("TGN commission PATCH:", error);
+    return fail("Failed to update commission", 500);
+  }
+}

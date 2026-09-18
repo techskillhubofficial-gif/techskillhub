@@ -7,10 +7,627 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id                    String                 @id @default(cuid())
+  name                  String
+  email                 String                 @unique
+  password              String
+  role                  Role                   @default(STUDENT)
+  image                 String?
+  bio                   String?
+  phone                 String?
+  emailVerified         Boolean                @default(false)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  admissions            Admission[]
+  certificates          Certificate[]
+  courses               Course[]               @relation("InstructorCourses")
+  enrollments           Enrollment[]
+  batchInstructor       CourseBatch[]          @relation("BatchInstructor")
+  payments              Payment[]
+  passwordResetTokens   PasswordResetToken[]
+  assignmentSubmissions AssignmentSubmission[]
+  assignmentReviews     AssignmentSubmission[] @relation("AssignmentSubmissionReviewer")
+  markedAttendances     LectureAttendance[]    @relation("AttendanceMarker")
+
+  tgnProfile              TgnMemberProfile?
+  tgnApplications         TgnApplication[]  @relation("TgnApplicantUser")
+  tgnReviewedApplications TgnApplication[]  @relation("TgnApplicationReviewer")
+  tgnAuditEvents          TgnAuditEvent[]   @relation("TgnAuditActor")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Lead {
+  id                   String                 @id @default(cuid())
+  fullName             String
+  email                String
+  phone                String
+  currentStatus        String
+  interestedProgram    String
+  careerGoal           String?
+  preferredContact     String
+  status               LeadStatus             @default(NEW)
+  notes                String?
+  assignedTo           String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  source               String?
+  closedReason         String?
+  lastContactedAt      DateTime?
+  admissions           Admission[]
+  applications         AdmissionApplication[]
+  counsellingSessions  CounsellingSession[]
+  activities           LeadActivity[]
+  followUps            LeadFollowUp[]
+  registrationPayments RegistrationPayment[]
+
+  tgnOwnerId        String?
+  tgnSourceMemberId String?
+  tgnOwner          TgnMemberProfile? @relation("TgnLeadOwner", fields: [tgnOwnerId], references: [id], onDelete: SetNull)
+  tgnSourceMember   TgnMemberProfile? @relation("TgnLeadSource", fields: [tgnSourceMemberId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([assignedTo])
+  @@index([email])
+  @@index([phone])
+  @@index([lastContactedAt])
+}
+
+model LeadActivity {
+  id          String           @id @default(cuid())
+  leadId      String
+  type        LeadActivityType
+  title       String
+  description String
+  metadata    Json?
+  createdBy   String?
+  createdAt   DateTime         @default(now())
+  lead        Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, createdAt])
+  @@index([type])
+}
+
+model LeadFollowUp {
+  id          String             @id @default(cuid())
+  leadId      String
+  scheduledAt DateTime
+  completedAt DateTime?
+  status      LeadFollowUpStatus @default(PENDING)
+  note        String?
+  assignedTo  String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  lead        Lead               @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, scheduledAt])
+  @@index([status, scheduledAt])
+  @@index([status])
+  @@index([assignedTo])
+}
+
+model CounsellingSession {
+  id              String   @id @default(cuid())
+  leadId          String
+  counsellorId    String?
+  scheduledAt     DateTime
+  durationMinutes Int      @default(30)
+  mode            String   @default("ONLINE")
+  meetingLink     String?
+  status          String   @default("SCHEDULED")
+  notes           String?
+  outcome         String?
+  nextAction      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lead            Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([scheduledAt])
+  @@index([status, scheduledAt])
+}
+
+model AdmissionApplication {
+  id                    String                  @id @default(cuid())
+  applicationNo         String                  @unique
+  leadId                String?
+  courseId              String?
+  studentName           String
+  studentEmail          String
+  studentPhone          String
+  dateOfBirth           DateTime?
+  gender                String?
+  city                  String?
+  state                 String?
+  addressLine1          String?
+  addressLine2          String?
+  postalCode            String?
+  parentName            String?
+  parentRelation        String?
+  parentPhone           String?
+  parentEmail           String?
+  parentOccupation      String?
+  educationLevel        String?
+  institutionName       String?
+  graduationYear        Int?
+  educationDetails      String?
+  currentOccupation     String?
+  careerGoal            String?
+  program               String
+  baseFee               Int                     @default(49999)
+  concessionPercent     Int                     @default(0)
+  concessionAmount      Int                     @default(0)
+  totalFee              Int                     @default(49999)
+  registrationFee       Int                     @default(5000)
+  firstLectureFee       Int                     @default(10000)
+  balanceFee            Int                     @default(34999)
+  paymentPlanName       String?
+  status                String                  @default("DRAFT")
+  submittedAt           DateTime?
+  reviewedAt            DateTime?
+  reviewedBy            String?
+  reviewNotes           String?
+  rejectionReason       String?
+  changesRequested      String?
+  declarationAcceptedAt DateTime?
+  parentConsentAt       DateTime?
+  privacyConsentAt      DateTime?
+  marketingConsentAt    DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  admission             Admission[]
+  course                Course?                 @relation(fields: [courseId], references: [id])
+  lead                  Lead?                   @relation(fields: [leadId], references: [id])
+  auditEvents           ApplicationAuditEvent[]
+  consents              ApplicationConsent[]
+  registrationPayment   RegistrationPayment?
+
+  @@index([leadId])
+  @@index([courseId])
+  @@index([status])
+  @@index([studentEmail])
+  @@index([studentPhone])
+  @@index([createdAt])
+}
+
+model ApplicationConsent {
+  id            String               @id @default(cuid())
+  applicationId String
+  consentType   String
+  accepted      Boolean              @default(false)
+  consentText   String
+  acceptedAt    DateTime?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime             @default(now())
+  application   AdmissionApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, consentType])
+  @@index([applicationId])
+}
+
+model ApplicationAuditEvent {
+  id            String               @id @default(cuid())
+  applicationId String
+  eventType     String
+  fromStatus    String?
+  toStatus      String?
+  actorId       String?
+  actorType     String               @default("SYSTEM")
+  description   String?
+  metadata      Json?
+  createdAt     DateTime             @default(now())
+  application   AdmissionApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, createdAt])
+  @@index([eventType])
+}
+
+model Admission {
+  id              String                @id @default(cuid())
+  admissionNo     String                @unique
+  leadId          String?
+  userId          String?
+  courseId        String?
+  studentName     String
+  studentEmail    String
+  studentPhone    String
+  program         String
+  totalFee        Int
+  registrationFee Int                   @default(5000)
+  batchName       String?
+  counsellor      String?
+  status          AdmissionStatus       @default(PENDING)
+  submittedAt     DateTime              @default(now())
+  verifiedAt      DateTime?
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  notes           String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  applicationId   String?
+  balanceFee      Decimal?              @db.Decimal(12, 2)
+  application     AdmissionApplication? @relation(fields: [applicationId], references: [id])
+  course          Course?               @relation(fields: [courseId], references: [id])
+  lead            Lead?                 @relation(fields: [leadId], references: [id])
+  user            User?                 @relation(fields: [userId], references: [id])
+  documents       AdmissionDocument[]
+  payments        Payment[]
+
+  @@index([studentName])
+  @@index([studentEmail])
+  @@index([studentPhone])
+  @@index([program])
+  @@index([status])
+  @@index([createdAt])
+  @@index([leadId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([applicationId])
+}
+
+model AdmissionDocument {
+  id              String                  @id @default(cuid())
+  admissionId     String
+  documentType    String
+  label           String
+  required        Boolean                 @default(true)
+  status          AdmissionDocumentStatus @default(PENDING)
+  fileUrl         String?
+  fileName        String?
+  mimeType        String?
+  fileSize        Int?
+  uploadedAt      DateTime?
+  reviewedAt      DateTime?
+  reviewedBy      String?
+  rejectionReason String?
+  notes           String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  admission       Admission               @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+
+  @@unique([admissionId, documentType])
+  @@index([admissionId])
+  @@index([status])
+  @@index([required, status])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  admissionId   String
+  userId        String?
+  amount        Int
+  type          PaymentType
+  mode          PaymentMode
+  transactionId String?
+  status        PaymentStatus @default(PENDING)
+  paymentDate   DateTime      @default(now())
+  verifiedAt    DateTime?
+  proofUrl      String?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  admission     Admission     @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+  user          User?         @relation(fields: [userId], references: [id])
+  receipt       Receipt?
+
+  @@index([admissionId])
+  @@index([userId])
+  @@index([status])
+  @@index([paymentDate])
+  @@index([type])
+  @@index([transactionId])
+}
+
+model Receipt {
+  id            String   @id @default(cuid())
+  receiptNumber String   @unique
+  paymentId     String   @unique
+  issuedAt      DateTime @default(now())
+  issuedBy      String?
+  createdAt     DateTime @default(now())
+  payment       Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([issuedAt])
+}
+
+model Course {
+  id                   String                 @id @default(cuid())
+  title                String
+  slug                 String                 @unique
+  description          String
+  thumbnail            String?
+  level                CourseLevel
+  duration             String
+  price                Float
+  published            Boolean                @default(false)
+  instructorId         String
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  admissions           Admission[]
+  applications         AdmissionApplication[]
+  assignments          Assignment[]
+  certificates         Certificate[]
+  instructor           User                   @relation("InstructorCourses", fields: [instructorId], references: [id])
+  enrollments          Enrollment[]
+  batches              CourseBatch[]
+  lessons              Lesson[]
+  modules              CourseModule[]
+  registrationPayments RegistrationPayment[]
+}
+
+model RegistrationPayment {
+  id              String                @id @default(cuid())
+  registrationNo  String                @unique
+  leadId          String
+  courseId        String
+  applicationId   String?               @unique
+  studentName     String
+  studentEmail    String
+  studentPhone    String
+  amount          Int
+  mode            PaymentMode
+  transactionId   String?               @unique
+  status          PaymentStatus         @default(PENDING)
+  proofUrl        String?
+  notes           String?
+  rejectionReason String?
+  submittedAt     DateTime              @default(now())
+  verifiedAt      DateTime?
+  verifiedBy      String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @default(now()) @updatedAt
+  application     AdmissionApplication? @relation(fields: [applicationId], references: [id])
+  course          Course                @relation(fields: [courseId], references: [id])
+  lead            Lead                  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([courseId])
+  @@index([status])
+  @@index([submittedAt])
+  @@index([studentEmail])
+  @@index([studentPhone])
+}
+
+model Lesson {
+  id               String             @id @default(cuid())
+  title            String
+  description      String?
+  videoUrl         String?
+  order            Int
+  courseId         String
+  moduleId         String?
+  scheduledAt      DateTime?
+  endsAt           DateTime?
+  meetingUrl       String?
+  presentationUrl  String?
+  studyMaterialUrl String?
+  instructorNotes  String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  course           Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module           CourseModule?      @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  resources        LearningResource[]
+  assignments      Assignment[]
+  progressRecords  LectureProgress[]
+
+  attendanceRecords LectureAttendance[]
+
+  @@index([courseId])
+  @@index([moduleId])
+  @@index([scheduledAt])
+}
+
+model CourseBatch {
+  id           String      @id @default(cuid())
+  courseId     String
+  name         String
+  code         String
+  description  String?
+  status       BatchStatus @default(ACTIVE)
+  startDate    DateTime?
+  endDate      DateTime?
+  instructorId String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  instructor  User?        @relation("BatchInstructor", fields: [instructorId], references: [id], onDelete: SetNull)
+  enrollments Enrollment[]
+
+  @@unique([courseId, code])
+  @@index([courseId])
+  @@index([status])
+  @@index([instructorId])
+}
+
+enum BatchStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+model Enrollment {
+  id                String            @id @default(cuid())
+  userId            String
+  courseId          String
+  batchId           String?
+  progress          Int               @default(0)
+  status            EnrollmentStatus  @default(ACTIVE)
+  enrolledAt        DateTime          @default(now())
+  course            Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lectureProgresses LectureProgress[]
+
+  batch             CourseBatch?        @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  attendanceRecords LectureAttendance[]
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@index([courseId])
+  @@index([batchId])
+  @@index([status])
+}
+
+model CourseModule {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  order       Int
+  courseId    String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons     Lesson[]
+  assignments Assignment[]
+
+  @@unique([courseId, order])
+  @@index([courseId])
+}
+
+model LearningResource {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  url         String
+  type        String   @default("LINK")
+  order       Int      @default(1)
+  lessonId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum AttendanceSource {
+  MANUAL
+  GOOGLE_MEET
+}
+
+model LectureAttendance {
+  id              String           @id @default(cuid())
+  enrollmentId    String
+  lessonId        String
+  status          AttendanceStatus @default(ABSENT)
+  source          AttendanceSource @default(MANUAL)
+  joinedAt        DateTime?
+  leftAt          DateTime?
+  durationMinutes Int?
+  notes           String?
+  markedById      String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson     Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  markedBy   User?      @relation("AttendanceMarker", fields: [markedById], references: [id], onDelete: SetNull)
+
+  @@unique([enrollmentId, lessonId])
+  @@index([enrollmentId])
+  @@index([lessonId])
+  @@index([status])
+  @@index([source])
+  @@index([markedById])
+}
+
+enum AssignmentType {
+  THEORY
+  PRACTICAL
+  PROJECT
+  CASE_STUDY
+}
+
+enum AssignmentSubmissionStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  CHANGES_REQUESTED
+  GRADED
+}
+
+model Assignment {
+  id          String                 @id @default(cuid())
+  title       String
+  description String
+  type        AssignmentType         @default(PRACTICAL)
+  dueDate     DateTime?
+  courseId    String
+  moduleId    String?
+  lessonId    String?
+  createdAt   DateTime               @default(now())
+  course      Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module      CourseModule?          @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  lesson      Lesson?                @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  submissions AssignmentSubmission[]
+
+  @@index([courseId])
+  @@index([moduleId])
+  @@index([lessonId])
+}
+
+model LectureProgress {
+  id           String    @id @default(cuid())
+  enrollmentId String
+  lessonId     String
+  completed    Boolean   @default(false)
+  startedAt    DateTime?
+  lastViewedAt DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson     Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, lessonId])
+  @@index([enrollmentId])
+  @@index([lessonId])
+  @@index([completed])
+}
+
+model Certificate {
+  id            String   @id @default(cuid())
+  certificateNo String   @unique
+  userId        String
+  courseId      String
+  issuedAt      DateTime @default(now())
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([userId])
+}
+
 enum Role {
   STUDENT
   MENTOR
   ADMIN
+  TGN_TEAM_LEADER
+  TGN_EXECUTIVE
 }
 
 enum CourseLevel {
@@ -25,114 +642,333 @@ enum EnrollmentStatus {
   CANCELLED
 }
 
-model User {
-  id       String @id @default(cuid())
-  name     String
-  email    String @unique
-  password String
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  ENROLLED
+  CLOSED
+}
 
-  role Role @default(STUDENT)
+enum LeadActivityType {
+  LEAD_CREATED
+  LEAD_UPDATED
+  STATUS_CHANGED
+  NOTE_ADDED
+  NOTE_UPDATED
+  ASSIGNED
+  CALL
+  WHATSAPP
+  EMAIL
+  FOLLOW_UP_CREATED
+  FOLLOW_UP_COMPLETED
+  FOLLOW_UP_CANCELLED
+  UPDATED
+}
 
-  image String?
-  bio   String?
-  phone String?
+enum LeadFollowUpStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
 
-  emailVerified Boolean @default(false)
+enum AdmissionStatus {
+  PENDING
+  PAYMENT_VERIFICATION
+  DOCUMENTS_PENDING
+  APPROVED
+  REJECTED
+  ENROLLED
+}
+
+enum PaymentStatus {
+  PENDING
+  VERIFIED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentType {
+  REGISTRATION_FEE
+  COURSE_FEE
+  INSTALLMENT
+  EMI
+  OTHER
+}
+
+enum PaymentMode {
+  UPI
+  BANK_TRANSFER
+  CASH
+  RAZORPAY
+  STRIPE
+  OTHER
+}
+
+enum AdmissionDocumentStatus {
+  PENDING
+  UPLOADED
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+model AssignmentSubmission {
+  id            String                     @id @default(cuid())
+  assignmentId  String
+  userId        String
+  status        AssignmentSubmissionStatus @default(DRAFT)
+  content       String?
+  submissionUrl String?
+  fileUrl       String?
+  score         Float?
+  maxScore      Float?
+  feedback      String?
+  submittedAt   DateTime?
+  reviewedAt    DateTime?
+  reviewedById  String?
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer   User?      @relation("AssignmentSubmissionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@unique([assignmentId, userId])
+  @@index([assignmentId])
+  @@index([userId])
+  @@index([status])
+  @@index([reviewedById])
+  @@index([submittedAt])
+}
+
+enum TgnMemberType {
+  TEAM_LEADER
+  EXECUTIVE
+}
+
+enum TgnMemberStatus {
+  PENDING
+  ONBOARDING
+  ORIENTATION
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum TgnTeamStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum TgnApplicationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  SHORTLISTED
+  INTERVIEW
+  APPROVED
+  REJECTED
+  ONBOARDING
+  ORIENTATION
+  ACTIVE
+  SUSPENDED
+}
+
+enum TgnCommissionStatus {
+  PENDING
+  ELIGIBLE
+  APPROVED
+  PAID
+  REJECTED
+}
+
+enum TgnAuditAction {
+  APPLICATION_SUBMITTED
+  APPLICATION_REVIEWED
+  APPLICATION_APPROVED
+  APPLICATION_REJECTED
+  MEMBER_CREATED
+  MEMBER_STATUS_CHANGED
+  TEAM_CREATED
+  TEAM_UPDATED
+  MEMBER_ASSIGNED
+  MEMBER_REASSIGNED
+  MEMBER_REMOVED
+  LEAD_ASSIGNED
+  LEAD_REASSIGNED
+  LEAD_SOURCE_RECORDED
+}
+
+model TgnMemberProfile {
+  id         String          @id @default(cuid())
+  userId     String          @unique
+  memberType TgnMemberType
+  status     TgnMemberStatus @default(PENDING)
+
+  managerId     String?
+  manager       TgnMemberProfile?  @relation("TgnMemberManager", fields: [managerId], references: [id], onDelete: SetNull)
+  directReports TgnMemberProfile[] @relation("TgnMemberManager")
+
+  teamId String?
+  team   TgnTeam? @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  referralCode     String? @unique
+  isNetworkManager Boolean @default(false)
+
+  joinedAt    DateTime?
+  activatedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  courses      Course[]      @relation("InstructorCourses")
-  enrollments  Enrollment[]
-  certificates Certificate[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  applicationsSubmitted TgnApplication[] @relation("TgnApplicationSourceMember")
+  ownedLeads            Lead[]           @relation("TgnLeadOwner")
+  sourcedLeads          Lead[]           @relation("TgnLeadSource")
+  ledTeams              TgnTeam[]        @relation("TgnTeamLeader")
+  auditEvents           TgnAuditEvent[]
+  commissions           TgnCommission[]
+
+  @@index([memberType])
+  @@index([status])
+  @@index([managerId])
+  @@index([teamId])
+  @@index([isNetworkManager])
 }
 
-model Course {
-  id String @id @default(cuid())
-
-  title       String
-  slug        String @unique
-  description String
-
-  thumbnail String?
-  level     CourseLevel
-
-  duration String
-  price    Float
-
-  published Boolean @default(false)
-
-  instructorId String
-  instructor   User   @relation("InstructorCourses", fields: [instructorId], references: [id])
-
-  lessons      Lesson[]
-  enrollments  Enrollment[]
-  certificates Certificate[]
-
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  assignments Assignment[]
-}
-
-model Lesson {
-  id String @id @default(cuid())
-
-  title       String
+model TgnTeam {
+  id          String        @id @default(cuid())
+  name        String
+  code        String
   description String?
+  status      TgnTeamStatus @default(ACTIVE)
 
-  videoUrl String?
+  leaderMemberId String           @unique
+  leader         TgnMemberProfile @relation("TgnTeamLeader", fields: [leaderMemberId], references: [id], onDelete: Restrict)
 
-  order Int
-
-  courseId String
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  members TgnMemberProfile[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([code])
+  @@index([status])
 }
 
-model Enrollment {
-  id String @id @default(cuid())
+model TgnApplication {
+  id            String @id @default(cuid())
+  applicationNo String @unique
 
-  userId   String
-  courseId String
+  memberType TgnMemberType
+  status     TgnApplicationStatus @default(SUBMITTED)
 
-  progress Int @default(0)
+  name  String
+  email String
+  phone String
+  city  String?
+  state String?
 
-  status EnrollmentStatus @default(ACTIVE)
+  education    String?
+  occupation   String?
+  organization String?
+  experience   String?
+  availability String?
+  workingMode  String?
 
-  enrolledAt DateTime @default(now())
+  leadershipExperience String?
+  previousTeamSize     Int?
+  expectedTeamSize     Int?
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  linkedinUrl  String?
+  instagramUrl String?
+  portfolioUrl String?
 
-  @@unique([userId, courseId])
-}
+  responsibilitiesAccepted Boolean @default(false)
+  declarationsAccepted     Boolean @default(false)
+  marketingPolicyAccepted  Boolean @default(false)
+  termsAccepted            Boolean @default(false)
 
-model Assignment {
-  id String @id @default(cuid())
+  declarationSnapshot Json?
 
-  title       String
-  description String
+  sourceMemberId String?
+  sourceMember   TgnMemberProfile? @relation("TgnApplicationSourceMember", fields: [sourceMemberId], references: [id], onDelete: SetNull)
 
-  dueDate DateTime?
+  userId String?
+  user   User?   @relation("TgnApplicantUser", fields: [userId], references: [id], onDelete: SetNull)
 
-  courseId String
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  reviewedById String?
+  reviewedBy   User?   @relation("TgnApplicationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  reviewNotes     String?
+  rejectionReason String?
+  reviewedAt      DateTime?
+  approvedAt      DateTime?
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  auditEvents TgnAuditEvent[]
+
+  @@index([memberType])
+  @@index([status])
+  @@index([email])
+  @@index([phone])
+  @@index([sourceMemberId])
+  @@index([userId])
+  @@index([reviewedById])
+  @@index([createdAt])
 }
 
-model Certificate {
-  id String @id @default(cuid())
+model TgnAuditEvent {
+  id     String         @id @default(cuid())
+  action TgnAuditAction
 
-  certificateNo String @unique
+  applicationId String?
+  application   TgnApplication? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
-  userId   String
-  courseId String
+  actorUserId String?
+  actorUser   User?   @relation("TgnAuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
 
-  issuedAt DateTime @default(now())
+  memberId String?
+  member   TgnMemberProfile? @relation(fields: [memberId], references: [id], onDelete: SetNull)
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([applicationId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([memberId, createdAt])
+  @@index([action])
+}
+
+model TgnCommission {
+  id          String  @id @default(cuid())
+  memberId    String
+  leadId      String?
+  admissionId String?
+
+  amount Decimal             @db.Decimal(10, 2)
+  status TgnCommissionStatus @default(PENDING)
+
+  eligibilityReason String?
+  approvedAt        DateTime?
+  approvedById      String?
+  paidAt            DateTime?
+  paidById          String?
+  notes             String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  member TgnMemberProfile @relation(fields: [memberId], references: [id], onDelete: Restrict)
+
+  @@index([memberId])
+  @@index([leadId])
+  @@index([admissionId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([approvedById])
+  @@index([paidById])
 }

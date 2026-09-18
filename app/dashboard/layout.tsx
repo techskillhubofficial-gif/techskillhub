@@ -1,70 +1,49 @@
-import Link from "next/link";
-import LogoutButton from "@/components/LogoutButton";
+import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
 
-export default function DashboardLayout({
+import { authOptions } from "@/lib/auth";
+import Sidebar from "@/components/dashboard/Sidebar";
+import TopNavbar from "@/components/dashboard/TopNavbar";
+
+interface DashboardLayoutProps {
+  children: ReactNode;
+}
+
+export default async function DashboardLayout({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+}: DashboardLayoutProps) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const role = session.user.role;
+
+  // The Team Workspace is never available to students.
+  if (role === "STUDENT") {
+    redirect("/student-portal");
+  }
+
+  // Only recognized internal roles can enter the workspace.
+  if (role !== "ADMIN" && role !== "MENTOR") {
+    redirect("/login");
+  }
+
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        background: "#f8fafc",
-      }}
-    >
-      <aside
-        style={{
-          width: "260px",
-          background: "#111827",
-          color: "#fff",
-          padding: "24px",
-        }}
-      >
-        <h2 style={{ marginBottom: "30px" }}>TechSkillHub</h2>
+    <div className="min-h-screen bg-[#F7F9FC] text-slate-950">
+      <Sidebar />
 
-        <nav
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "15px",
-          }}
-        >
-          <Link href="/dashboard" style={{ color: "white" }}>
-            Dashboard
-          </Link>
+      <div className="min-h-screen lg:pl-[290px]">
+        <TopNavbar />
 
-          <Link href="/dashboard/courses" style={{ color: "white" }}>
-            Courses
-          </Link>
-
-          <Link href="/dashboard/assignments" style={{ color: "white" }}>
-            Assignments
-          </Link>
-
-          <Link href="/dashboard/profile" style={{ color: "white" }}>
-            Profile
-          </Link>
-
-          <Link href="/dashboard/settings" style={{ color: "white" }}>
-            Settings
-          </Link>
-        </nav>
-
-        <div style={{ marginTop: "40px" }}>
-          <LogoutButton />
-        </div>
-      </aside>
-
-      <main
-        style={{
-          flex: 1,
-          padding: "30px",
-        }}
-      >
-        {children}
-      </main>
+        <main className="min-h-[calc(100vh-76px)] px-4 pb-10 pt-5 sm:px-6 lg:px-8 xl:px-10">
+          <div className="mx-auto w-full max-w-[1700px]">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

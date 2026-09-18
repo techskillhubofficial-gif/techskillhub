@@ -1,0 +1,231 @@
+import { NextResponse } from "next/server";
+import { TgnMemberStatus, TgnMemberType } from "@prisma/client";
+
+import { prisma } from "@/lib/prisma";
+import { getTgnContext } from "@/lib/tgn/authorization";
+
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
+  try {
+    const context = await getTgnContext();
+
+    if (!context) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "TGN authentication is required.",
+        },
+        { status: 401 },
+      );
+    }
+
+    if (
+      context.access !== "TEAM_LEADER" &&
+      context.access !== "NETWORK_MANAGER" &&
+      context.access !== "FOUNDER"
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Team recruitment access is required.",
+        },
+        { status: 403 },
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const requestedMemberId = searchParams.get("memberId")?.trim();
+    const requestedRef = searchParams.get("ref")?.trim();
+
+    let memberId =
+      requestedMemberId &&
+      (context.access === "FOUNDER" || context.access === "NETWORK_MANAGER")
+        ? requestedMemberId
+        : context.memberId;
+
+    if (!memberId) {
+      const currentMember = await prisma.tgnMemberProfile.findUnique({
+        where: {
+          userId: context.userId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      memberId = currentMember?.id ?? null;
+    }
+
+    if (requestedRef) {
+      const referredMember = await prisma.tgnMemberProfile.findUnique({
+        where: { referralCode: requestedRef },
+        select: {
+          id: true,
+          memberType: true,
+        },
+      });
+
+      if (!referredMember) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "This Team Leader invitation could not be verified.",
+          },
+          { status: 404 },
+        );
+      }
+
+      if (referredMember.memberType !== TgnMemberType.TEAM_LEADER) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "This invitation is not a valid Team Leader invitation.",
+          },
+          { status: 400 },
+        );
+      }
+
+      memberId = referredMember.id;
+    }
+
+    if (!memberId) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "No TGN member profile is available for recruitment.",
+        },
+        { status: 404 },
+      );
+    }
+
+    const member = await prisma.tgnMemberProfile.findUnique({
+      where: { id: memberId },
+      select: {
+        id: true,
+        memberType: true,
+        status: true,
+        referralCode: true,
+        teamId: true,
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+        team: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            status: true,
+            _count: {
+              select: {
+                members: true,
+              },
+            },
+          },
+        },
+        directReports: {
+          where: {
+            memberType: TgnMemberType.EXECUTIVE,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          select: {
+            id: true,
+            status: true,
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+            createdAt: true,
+          },
+        },
+      },
+    });
+
+    if (!member) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "TGN member profile was not found.",
+        },
+        { status: 404 },
+      );
+    }
+
+    if (
+      member.memberType !== TgnMemberType.TEAM_LEADER &&
+      !(
+        context.access === "FOUNDER" ||
+        context.access === "NETWORK_MANAGER"
+      )
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Only Team Leaders can use team recruitment.",
+        },
+        { status: 403 },
+      );
+    }
+
+    if (!member.referralCode) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "This Team Leader does not have a recruitment referral code yet.",
+        },
+        { status: 409 },
+      );
+    }
+
+    const baseUrl =
+      process.env.NEXTAUTH_URL ??
+      process.env.NEXT_PUBLIC_APP_URL ??
+      new URL(request.url).origin;
+
+    const recruitmentUrl = new URL(
+      "/growth-network/join",
+      baseUrl,
+    );
+
+    recruitmentUrl.searchParams.set("role", "EXECUTIVE");
+    recruitmentUrl.searchParams.set("ref", member.referralCode);
+
+    return NextResponse.json({
+      success: true,
+      recruitment: {
+        memberId: member.id,
+        leaderName: member.user.name ?? member.user.email,
+        referralCode: member.referralCode,
+        recruitmentUrl: recruitmentUrl.toString(),
+        team: member.team,
+        members: member.directReports,
+        activeMembers: member.directReports.filter(
+          (item) => item.status === TgnMemberStatus.ACTIVE,
+        ).length,
+        pendingMembers: member.directReports.filter(
+          (item) =>
+            item.status === TgnMemberStatus.ONBOARDING ||
+            item.status === TgnMemberStatus.ORIENTATION,
+        ).length,
+      },
+    });
+  } catch (error) {
+    console.error("TGN team recruitment GET error:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Unable to load team recruitment information.",
+      },
+      { status: 500 },
+    );
+  }
+}

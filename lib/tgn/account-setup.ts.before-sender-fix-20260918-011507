@@ -1,0 +1,169 @@
+import { createHash, randomBytes } from "crypto";
+import nodemailer from "nodemailer";
+import { prisma } from "@/lib/prisma";
+
+const SETUP_TOKEN_EXPIRY_HOURS = 24;
+
+function hashToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function getBaseUrl() {
+  return (
+    process.env.NEXTAUTH_URL?.replace(/\/$/, "") ||
+    "https://techskillhub.online"
+  );
+}
+
+function getTransporter() {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || "465");
+  const user = process.env.SMTP_USER;
+  const password = process.env.SMTP_PASSWORD;
+
+  if (!host || !user || !password || !Number.isFinite(port)) {
+    throw new Error("TGN account setup SMTP is not configured.");
+  }
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass: password },
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 15_000,
+  });
+}
+
+export async function createAccountSetupToken(userId: string) {
+  const rawToken = randomBytes(32).toString("hex");
+  const tokenHash = hashToken(rawToken);
+
+  const expiresAt = new Date(
+    Date.now() + SETUP_TOKEN_EXPIRY_HOURS * 60 * 60 * 1000,
+  );
+
+  await prisma.$transaction(async (tx) => {
+    await tx.passwordResetToken.updateMany({
+      where: { userId, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+
+    await tx.passwordResetToken.create({
+      data: { userId, tokenHash, expiresAt },
+    });
+  });
+
+  return rawToken;
+}
+
+export async function sendTgnAccountSetupEmail(
+  email: string,
+  name: string,
+  roleLabel: string,
+  setupUrl: string,
+) {
+  const transporter = getTransporter();
+
+  const from =
+    process.env.SMTP_FROM ||
+    "TechSkillHub <noreply@techskillhub.online>";
+
+  const replyTo =
+    process.env.SMTP_REPLY_TO ||
+    "support@techskillhub.online";
+
+  const firstName = name.trim().split(/\s+/)[0] || "there";
+  const safeFirstName = escapeHtml(firstName);
+  const safeRole = escapeHtml(roleLabel);
+  const safeUrl = escapeHtml(setupUrl);
+
+  const info = await transporter.sendMail({
+    from,
+    to: email,
+    replyTo,
+    subject: "Your TechSkillHub Growth Network account is ready",
+    text: `Hi ${firstName},
+
+Your TechSkillHub Growth Network account has been created.
+
+Role: ${roleLabel}
+
+Set your password and activate your account here:
+${setupUrl}
+
+This setup link will expire in ${SETUP_TOKEN_EXPIRY_HOURS} hours.
+
+TechSkillHub
+Learn. Build. Earn.`,
+    html: `
+      <div style="margin:0;padding:40px 20px;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a">
+        <div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;padding:40px">
+          <div style="font-size:24px;font-weight:800;color:#2563eb;margin-bottom:28px">
+            TechSkillHub
+          </div>
+
+          <h1 style="font-size:28px;line-height:1.2;margin:0 0 16px;color:#0f172a">
+            Your account is ready
+          </h1>
+
+          <p style="font-size:16px;line-height:1.7;color:#475569">
+            Hi ${safeFirstName},
+          </p>
+
+          <p style="font-size:16px;line-height:1.7;color:#475569">
+            Your TechSkillHub Growth Network application has been approved
+            and your account has been created.
+          </p>
+
+          <div style="margin:24px 0;padding:18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px">
+            <div style="font-size:12px;color:#64748b;margin-bottom:6px">
+              Network role
+            </div>
+            <div style="font-size:17px;font-weight:700;color:#0f172a">
+              ${safeRole}
+            </div>
+          </div>
+
+          <a href="${safeUrl}"
+            style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;padding:14px 24px;border-radius:12px">
+            Set Password & Activate
+          </a>
+
+          <p style="font-size:14px;line-height:1.6;margin-top:28px;color:#64748b">
+            This link will expire in ${SETUP_TOKEN_EXPIRY_HOURS} hours.
+          </p>
+
+          <div style="margin-top:32px;padding-top:24px;border-top:1px solid #e2e8f0">
+            <p style="font-size:12px;color:#94a3b8">
+              TechSkillHub · Learn. Build. Earn.
+            </p>
+          </div>
+        </div>
+      </div>
+    `,
+  });
+
+  console.info("[TGN] Account setup email SMTP result", {
+    to: email,
+    from,
+    messageId: info.messageId,
+    accepted: info.accepted,
+    rejected: info.rejected,
+    response: info.response,
+  });
+}
+
+export function getAccountSetupUrl(rawToken: string) {
+  return `${getBaseUrl()}/reset-password?token=${encodeURIComponent(rawToken)}`;
+}

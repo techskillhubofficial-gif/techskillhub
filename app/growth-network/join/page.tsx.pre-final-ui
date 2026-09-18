@@ -1,0 +1,1514 @@
+"use client";
+
+import Image from "next/image";
+import { FormEvent, ReactNode, useEffect, useState } from "react";
+import {
+  ArrowRight,
+  BriefcaseBusiness,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  Globe2,
+  GraduationCap,
+  Handshake,
+  Loader2,
+  Megaphone,
+  ShieldCheck,
+  Users,
+  WalletCards,
+} from "lucide-react";
+
+type MemberType = "TEAM_LEADER" | "EXECUTIVE";
+
+const sections = [
+  ["role", "01", "Role selection"],
+  ["personal", "02", "Personal information"],
+  ["experience", "03", "Experience & availability"],
+  ["profiles", "04", "Online presence"],
+  ["referral", "05", "Referral information"],
+  ["declarations", "06", "Responsibilities & declarations"],
+] as const;
+
+const inputClass =
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10";
+
+const textareaClass =
+  "w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10";
+
+function FieldLabel({
+  children,
+  required = false,
+}: {
+  children: ReactNode;
+  required?: boolean;
+}) {
+  return (
+    <label className="mb-2 block text-sm font-semibold text-slate-700">
+      {children}
+      {required && <span className="ml-1 text-red-500">*</span>}
+    </label>
+  );
+}
+
+function SectionHeading({
+  number,
+  title,
+  description,
+  icon: Icon,
+}: {
+  number: string;
+  title: string;
+  description: string;
+  icon: typeof Users;
+}) {
+  return (
+    <div className="mb-8 flex items-start gap-4">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+        <Icon size={20} />
+      </div>
+
+      <div>
+        <div className="mb-1 flex items-center gap-2">
+          <span className="text-[11px] font-bold tracking-[0.18em] text-blue-600">
+            {number}
+          </span>
+          <span className="h-px w-5 bg-blue-100" />
+        </div>
+
+        <h2 className="text-xl font-bold tracking-tight text-slate-950">
+          {title}
+        </h2>
+
+        <p className="mt-1.5 text-sm leading-6 text-slate-500">
+          {description}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function Declaration({
+  name,
+  children,
+  accent = false,
+}: {
+  name: string;
+  children: ReactNode;
+  accent?: boolean;
+}) {
+  return (
+    <label
+      className={`flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-4 transition-all ${
+        accent
+          ? "border-blue-100 bg-blue-50/40 hover:border-blue-200"
+          : "border-slate-200 bg-slate-50/50 hover:border-slate-300 hover:bg-white"
+      }`}
+    >
+      <input
+        type="checkbox"
+        name={name}
+        required
+        className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-blue-600"
+      />
+      <span className="text-sm leading-6 text-slate-600">{children}</span>
+    </label>
+  );
+}
+
+export default function GrowthNetworkJoinPage() {
+  const [memberType, setMemberType] =
+    useState<MemberType>("EXECUTIVE");
+  const [referralCode, setReferralCode] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [applicationNo, setApplicationNo] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [activeSection, setActiveSection] = useState("role");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref")?.trim();
+
+    if (ref) {
+      setReferralCode(ref);
+    }
+  }, []);
+
+  useEffect(() => {
+    const observers: IntersectionObserver[] = [];
+
+    sections.forEach(([id]) => {
+      const element = document.getElementById(id);
+
+      if (!element) return;
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setActiveSection(id);
+          }
+        },
+        {
+          rootMargin: "-20% 0px -65% 0px",
+          threshold: 0,
+        }
+      );
+
+      observer.observe(element);
+      observers.push(observer);
+    });
+
+    return () => {
+      observers.forEach((observer) => observer.disconnect());
+    };
+  }, []);
+
+  function scrollToSection(id: string) {
+    document.getElementById(id)?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const form = new FormData(event.currentTarget);
+
+    const responsibilitiesAccepted =
+      form.get("responsibilitiesAccepted") === "on";
+    const declarationsAccepted =
+      form.get("declarationsAccepted") === "on";
+    const marketingPolicyAccepted =
+      form.get("marketingPolicyAccepted") === "on";
+    const termsAccepted = form.get("termsAccepted") === "on";
+
+    if (
+      !responsibilitiesAccepted ||
+      !declarationsAccepted ||
+      !marketingPolicyAccepted ||
+      !termsAccepted
+    ) {
+      setError("Please accept all required declarations before submitting.");
+      setLoading(false);
+      return;
+    }
+
+    const payload = {
+      memberType,
+      name: String(form.get("name") || "").trim(),
+      email: String(form.get("email") || "").trim(),
+      phone: String(form.get("phone") || "").trim(),
+      city: String(form.get("city") || "").trim() || undefined,
+      state: String(form.get("state") || "").trim() || undefined,
+      education:
+        String(form.get("education") || "").trim() || undefined,
+      occupation:
+        String(form.get("occupation") || "").trim() || undefined,
+      organization:
+        String(form.get("organization") || "").trim() || undefined,
+      experience:
+        String(form.get("experience") || "").trim() || undefined,
+      availability:
+        String(form.get("availability") || "").trim() || undefined,
+      workingMode:
+        String(form.get("workingMode") || "").trim() || undefined,
+      leadershipExperience:
+        String(form.get("leadershipExperience") || "").trim() || undefined,
+      previousTeamSize:
+        String(form.get("previousTeamSize") || "").trim() || undefined,
+      expectedTeamSize:
+        String(form.get("expectedTeamSize") || "").trim() || undefined,
+      linkedinUrl:
+        String(form.get("linkedinUrl") || "").trim() || undefined,
+      instagramUrl:
+        String(form.get("instagramUrl") || "").trim() || undefined,
+      portfolioUrl:
+        String(form.get("portfolioUrl") || "").trim() || undefined,
+      responsibilitiesAccepted,
+      declarationsAccepted,
+      marketingPolicyAccepted,
+      termsAccepted,
+      ref:
+        String(form.get("ref") || "").trim() ||
+        referralCode ||
+        undefined,
+    };
+
+    try {
+      const response = await fetch("/api/tgn/applications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setError(result.message || "Unable to submit your application.");
+        return;
+      }
+
+      setApplicationNo(result.application?.applicationNo || "");
+      setSubmitted(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (submitError) {
+      console.error("TGN application submission error:", submitError);
+      setError("Unable to submit the application. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (submitted) {
+    return (
+      <main className="min-h-screen bg-slate-50 text-slate-950">
+        <header className="border-b border-slate-200 bg-white">
+          <div className="mx-auto flex h-[76px] max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+            <a href="/" aria-label="TechSkillHub home">
+              <Image
+                src="/logo/Full-logo.png"
+                alt="TechSkillHub"
+                width={190}
+                height={52}
+                className="h-10 w-auto object-contain"
+              />
+            </a>
+
+            <div className="flex items-center gap-4">
+              <span className="hidden text-sm font-semibold text-slate-500 sm:block">
+                Application Portal
+              </span>
+
+              <span className="flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
+                <ShieldCheck size={15} />
+                Secure
+              </span>
+            </div>
+          </div>
+        </header>
+
+        <section className="flex min-h-[calc(100vh-76px)] items-center justify-center px-5 py-16">
+          <div className="w-full max-w-2xl">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+              <CheckCircle2 size={34} />
+            </div>
+
+            <div className="rounded-[24px] border border-slate-200 bg-white p-8 text-center shadow-[0_12px_40px_rgba(15,23,42,0.06)] sm:p-12">
+              <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-3.5 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600">
+                Application received
+              </span>
+
+              <h1 className="mt-5 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+                Your application has been submitted.
+              </h1>
+
+              <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-slate-500">
+                Thank you for applying to the TechSkillHub Growth Network.
+                Your information will be reviewed before the onboarding
+                process.
+              </p>
+
+              {applicationNo && (
+                <div className="mx-auto mt-8 max-w-sm rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600">
+                    Application number
+                  </p>
+                  <p className="mt-2 break-all text-xl font-bold tracking-tight text-slate-950">
+                    {applicationNo}
+                  </p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Keep this number for your records.
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                <a
+                  href="/"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700"
+                >
+                  Back to TechSkillHub
+                  <ArrowRight size={17} />
+                </a>
+
+                <a
+                  href="/login"
+                  className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                >
+                  Application portal
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-50 text-slate-950">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/98 shadow-[0_1px_12px_rgba(15,23,42,0.04)] backdrop-blur">
+        <div className="mx-auto flex h-[76px] max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+          <a href="/" aria-label="TechSkillHub home">
+            <Image
+              src="/logo/Full-logo.png"
+              alt="TechSkillHub"
+              width={190}
+              height={52}
+              className="h-10 w-auto object-contain"
+            />
+          </a>
+
+          <div className="flex items-center gap-4">
+            <div className="hidden items-center gap-2 text-sm font-semibold text-slate-500 sm:flex">
+              <ShieldCheck size={16} className="text-emerald-500" />
+              Secure application
+            </div>
+
+            <span className="hidden h-5 w-px bg-slate-200 sm:block" />
+
+            <span className="text-sm font-semibold text-slate-700">
+              Application Portal
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <div className="border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-[1440px] px-5 py-8 sm:px-8 lg:px-12">
+          <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-blue-600">
+                <Handshake size={15} />
+                TechSkillHub Growth Network
+              </div>
+
+              <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+                Growth Network Application
+              </h1>
+
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+                Apply to participate in TechSkillHub&apos;s outreach,
+                marketing and student acquisition activities.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
+                  Application
+                </p>
+                <p className="mt-1 text-sm font-bold text-slate-800">
+                  6 sections
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck size={16} className="text-emerald-600" />
+                  <span className="text-sm font-bold text-emerald-700">
+                    No investment required
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-[1440px] px-5 py-8 sm:px-8 lg:px-12 lg:py-10">
+        {/* TGN Applicant Information */}
+        <section className="mb-8">
+          {/* Overview */}
+          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.04)]">
+            <div className="grid lg:grid-cols-[1.25fr_.75fr]">
+              <div className="p-6 sm:p-8 lg:p-10">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-blue-600" />
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-blue-600">
+                    About the Growth Network
+                  </p>
+                </div>
+
+                <h2 className="mt-3 max-w-3xl text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">
+                  Build skills. Gain experience. Contribute to growth.
+                </h2>
+
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
+                  The TechSkillHub Growth Network is a structured network for
+                  people who want to participate in outreach, lead generation,
+                  networking, follow-ups and student acquisition while developing
+                  practical professional skills.
+                </p>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-blue-600 shadow-sm">
+                      ✓
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">
+                        No investment required
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        No joining investment is required.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-blue-600 shadow-sm">
+                      ↗
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">
+                        Flexible participation
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Participate through applicable TGN activities.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-blue-600 shadow-sm">
+                      +
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">
+                        Training & support
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Learn through applicable guidance and training.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-blue-600 shadow-sm">
+                      ★
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">
+                        Practical experience
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Work around real growth activities.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 bg-slate-50/70 p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                  At a glance
+                </p>
+
+                <div className="mt-5 space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500">
+                      Available roles
+                    </p>
+                    <p className="mt-1 text-lg font-bold text-slate-950">
+                      2 role paths
+              </p>
+                    <p className="text-xs text-slate-500">
+                      Growth Executive · Team Leader
+                    </p>
+                  </div>
+
+                  <div className="h-px bg-slate-200" />
+
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500">
+                      Commission opportunity
+                    </p>
+                    <p className="mt-1 text-2xl font-black tracking-tight text-blue-600">
+                      Up to ₹5,000
+                    </p>
+                    <p className="text-xs leading-5 text-slate-500">
+                      Per confirmed admission, subject to applicable eligibility
+                      conditions.
+                    </p>
+                  </div>
+
+                  <div className="h-px bg-slate-200" />
+
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500">
+                      Application status
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-slate-900">
+                      Reviewed before onboarding
+                    </p>
+                    <p className="text-xs leading-5 text-slate-500">
+                      Applying does not guarantee selection.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Roles */}
+          <div className="mt-8">
+            <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-600">
+                  Choose your path
+                </p>
+                <h3 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">
+                  Which role fits you?
+                </h3>
+              </div>
+
+              <p className="max-w-md text-xs leading-5 text-slate-500 sm:text-right">
+                Choose the role that best matches your experience, availability
+                and preferred level of responsibility.
+              </p>
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-2">
+              <div className="group rounded-2xl border border-blue-200 bg-white p-6 shadow-[0_8px_30px_rgba(37,99,235,0.06)] transition-shadow hover:shadow-[0_12px_35px_rgba(37,99,235,0.10)]">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <span className="inline-flex rounded-lg bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-blue-700">
+                      Role 01
+                    </span>
+
+                    <h4 className="mt-3 text-xl font-bold text-slate-950">
+                      Growth Executive
+                    </h4>
+                  </div>
+
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                    ↗
+                  </div>
+                </div>
+
+                <p className="mt-3 text-sm leading-6 text-slate-600">
+                  Participate in practical growth activities focused on outreach,
+                  lead generation, referrals, follow-ups and student acquisition.
+                </p>
+
+                <div className="mt-5 grid gap-2">
+                  {[
+                    "Lead generation & referrals",
+                    "Prospect outreach & follow-ups",
+                    "Community & networking activities",
+                    "Student acquisition support",
+                    "Assigned growth activities",
+                    "Training & professional development",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-2.5 rounded-lg bg-slate-50 px-3 py-2.5 text-xs font-medium text-slate-700"
+                    >
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600" />
+                      {item}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-5 border-t border-slate-100 pt-4">
+                  <p className="text-[11px] font-semibold text-slate-500">
+                    Best suited for
+                  </p>
+                  <p className="mt-1 text-xs text-slate-700">
+                    Students, graduates, freelancers, working professionals and
+                    people building practical growth experience.
+                  </p>
+                </div>
+              </div>
+
+              <div className="group rounded-2xl border border-indigo-200 bg-white p-6 shadow-[0_8px_30px_rgba(79,70,229,0.05)] transition-shadow hover:shadow-[0_12px_35px_rgba(79,70,229,0.09)]">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <span className="inline-flex rounded-lg bg-indigo-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-700">
+                      Role 02
+                    </span>
+
+                    <h4 className="mt-3 text-xl font-bold text-slate-950">
+                      Team Leader
+                    </h4>
+                  </div>
+
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                    ◆
+                  </div>
+                </div>
+
+                <p className="mt-3 text-sm leading-6 text-slate-600">
+                  Coordinate Growth Executives while supporting communication,
+                  activities, reporting and team performance.
+                </p>
+
+                <div className="mt-5 grid gap-2">
+                  {[
+                    "Growth Executive coordination",
+                    "Team communication",
+                    "Task coordination",
+                    "Progress & performance tracking",
+                    "Lead generation & follow-up support",
+                    "Leadership development",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-2.5 rounded-lg bg-slate-50 px-3 py-2.5 text-xs font-medium text-slate-700"
+                    >
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-600" />
+                      {item}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-5 border-t border-slate-100 pt-4">
+                  <p className="text-[11px] font-semibold text-slate-500">
+                    Best suited for
+                  </p>
+                  <p className="mt-1 text-xs text-slate-700">
+                    People comfortable with coordination, communication,
+                    responsibility and team-oriented work.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* What you gain */}
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
+            <div className="max-w-2xl">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600">
+                What you gain
+              </p>
+              <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-[1.7rem]">
+                Learn through practical participation
+              </h3>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                TGN combines training and practical contribution so members can
+                develop skills that are useful in professional environments.
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                ["Communication", "Professional communication and relationship building."],
+                ["Sales", "Outreach, follow-up, negotiation and conversion concepts."],
+                ["Marketing", "Digital marketing, networking and personal branding."],
+                ["Technology", "CRM workflows, LinkedIn and AI productivity tools."],
+              ].map(([title, description]) => (
+                <div
+                  key={title}
+                  className="rounded-xl border border-slate-100 bg-slate-50/70 p-4"
+                >
+                  <h4 className="text-sm font-bold text-slate-950">{title}</h4>
+                  <p className="mt-1.5 text-xs leading-5 text-slate-500">
+                    {description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Journey + earnings */}
+          <div className="mt-8 grid gap-5 lg:grid-cols-[1.15fr_.85fr]">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600">
+                Your journey
+              </p>
+
+              <h3 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
+                From application to contribution
+              </h3>
+
+              <div className="mt-6 space-y-4">
+                {[
+                  ["01", "Apply", "Submit your information and select your preferred role."],
+                  ["02", "Review", "The TechSkillHub team reviews your application."],
+                  ["03", "Onboarding", "Selected applicants receive applicable onboarding and guidance."],
+                  ["04", "Learn & contribute", "Complete applicable training and participate in approved activities."],
+                  ["05", "Grow", "Build experience and become eligible for applicable recognition or performance opportunities."],
+                ].map(([number, title, description], index) => (
+                  <div key={number} className="flex gap-4">
+                    <div className="relative flex w-8 shrink-0 justify-center">
+                      <span className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full bg-blue-50 text-[10px] font-black text-blue-600 ring-1 ring-blue-100">
+                        {number}
+                      </span>
+
+                      {index < 4 && (
+                        <span className="absolute top-8 h-full w-px bg-slate-200" />
+                      )}
+                    </div>
+
+                    <div className="pb-2">
+                      <h4 className="text-sm font-bold text-slate-950">
+                        {title}
+                      </h4>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        {description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-6 sm:p-8">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-700">
+                Earnings opportunity
+              </p>
+
+              <p className="mt-3 text-4xl font-black tracking-tight text-blue-600">
+                ₹5,000
+              </p>
+
+              <p className="mt-1 text-sm font-bold text-slate-950">
+                Up to per confirmed admission
+              </p>
+
+              <p className="mt-3 text-xs leading-5 text-slate-600">
+                TGN members may be eligible for performance-based commission
+                where an admission is correctly attributed through the applicable
+                TGN process and satisfies the relevant conditions.
+              </p>
+
+              <div className="mt-5 space-y-2">
+                {[
+                  "Correct TGN/CRM attribution",
+                  "Approved or confirmed admission",
+                  "Verified applicable payment conditions",
+                  "Any other configured eligibility requirements",
+                ].map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-2 rounded-lg bg-white/80 px-3 py-2.5 text-xs font-medium text-slate-700"
+                  >
+                    <span className="text-blue-600">✓</span>
+                    {item}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-[11px] leading-5 text-amber-800">
+                  <strong>Important:</strong> ₹5,000 is an upper commission
+                  opportunity, not a guaranteed salary, income or fixed payment.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Certification + expectations */}
+          <div className="mt-8 grid gap-5 lg:grid-cols-2">
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-6 sm:p-8">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-700">
+                Certification & recognition
+              </p>
+
+              <h3 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
+                Recognition follows participation
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Applying or joining does not automatically qualify a member for
+                a certificate. Recognition depends on completing the applicable
+                requirements communicated through the TGN process.
+              </p>
+
+              <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                {[
+                  "Applicable orientation",
+                  "Training completion",
+                  "Assigned activities",
+                  "Professional conduct",
+                  "Required participation",
+                  "Applicable performance requirements",
+                ].map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-lg bg-white px-3 py-2.5 text-xs font-medium text-slate-700 ring-1 ring-emerald-100"
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+
+              <p className="mt-4 text-[11px] leading-5 text-slate-500">
+                Available recognition and exact eligibility requirements may
+                depend on role, participation and performance.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600">
+                Professional expectations
+              </p>
+
+              <h3 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
+                What every member is expected to do
+              </h3>
+
+              <div className="mt-5 space-y-3">
+                {[
+                  "Provide accurate information.",
+                  "Communicate professionally with prospects and teammates.",
+                  "Use approved workflows and materials.",
+                  "Never make unauthorized promises or guarantees.",
+                  "Complete applicable training, meetings and activities.",
+                  "Maintain responsible outreach practices.",
+                ].map((item) => (
+                  <div key={item} className="flex gap-3 text-sm">
+                    <span className="mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-50 text-[9px] font-bold text-blue-600">
+                      ✓
+                    </span>
+                    <span className="leading-5 text-slate-600">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ */}
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-white">
+            <div className="border-b border-slate-100 px-6 py-6 sm:px-8">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600">
+                Applicant FAQ
+              </p>
+              <h3 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
+                Common questions before you apply
+              </h3>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {[
+                [
+                  "Do I need to pay anything to join?",
+                  "No investment is required to submit a TGN application.",
+                ],
+                [
+                  "Can students apply?",
+                  "Yes. Students are among the potential applicants, subject to the applicable role and participation requirements.",
+                ],
+                [
+                  "What is the difference between the two roles?",
+                  "Growth Executives focus primarily on outreach, lead generation, referrals, follow-ups and assigned growth activities. Team Leaders additionally coordinate Growth Executives, communication, tasks and performance.",
+                ],
+                [
+                  "Can I participate remotely?",
+                  "The program supports flexible participation and work-from-anywhere activities where applicable. Specific meetings, responsibilities or workflows may require participation through the channels communicated by TechSkillHub.",
+                ],
+                [
+                  "Is ₹5,000 guaranteed for every admission?",
+                  "No. It is the stated maximum commission opportunity per confirmed admission and depends on applicable attribution and eligibility conditions.",
+                ],
+                [
+                  "Will I automatically receive a certificate?",
+                  "No. Certification or recognition depends on completing the applicable requirements communicated through the TGN process.",
+                ],
+                [
+                  "Does applying guarantee selection?",
+                  "No. Applications are reviewed before onboarding.",
+                ],
+                [
+                  "Can I apply directly for Team Leader?",
+                  "Yes. You can apply for the Team Leader role. Selection and onboarding remain subject to TechSkillHub review and applicable requirements.",
+                ],
+                [
+                  "Will I receive training?",
+                  "TGN includes applicable training and support intended to help members understand their responsibilities and develop practical skills.",
+                ],
+              ].map(([question, answer]) => (
+                <details key={question} className="group px-6 sm:px-8">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-5 py-5 text-sm font-semibold text-slate-900 [&::-webkit-details-marker]:hidden">
+                    <span>{question}</span>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-lg font-normal text-slate-400 transition-transform group-open:rotate-45">
+                      +
+                    </span>
+                  </summary>
+
+                  <p className="max-w-4xl pb-5 pr-10 text-sm leading-6 text-slate-500">
+                    {answer}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </div>
+
+          {/* Application CTA */}
+          <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-blue-100 bg-blue-50/50 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+            <div>
+              <p className="text-sm font-bold text-slate-950">
+                Everything clear?
+              </p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Choose your role and complete the application below with accurate
+                information.
+              </p>
+            </div>
+
+            <span className="shrink-0 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-blue-700 shadow-sm ring-1 ring-blue-100">
+              Continue to application ↓
+            </span>
+          </div>
+        </section>
+
+        <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-8 xl:grid-cols-[300px_minmax(0,980px)] xl:justify-center">
+          <aside className="hidden lg:sticky lg:top-[102px] lg:block">
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
+              <div className="border-b border-slate-100 bg-gradient-to-br from-blue-50 via-white to-white p-6">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
+                  <Handshake size={20} />
+                </div>
+
+                <p className="mt-5 text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600">
+                  Application
+                </p>
+
+                <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-950">
+                  Growth Network
+                </h2>
+
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  Complete the application and our team will review your
+                  information before onboarding.
+                </p>
+              </div>
+
+              <nav className="p-3">
+                {sections.map(([id, number, label]) => {
+                  const active = activeSection === id;
+
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => scrollToSection(id)}
+                      className={`group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition ${
+                        active
+                          ? "bg-blue-50 text-blue-700"
+                          : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold ${
+                          active
+                            ? "bg-blue-600 text-white"
+                            : "bg-slate-100 text-slate-500 group-hover:bg-slate-200"
+                        }`}
+                      >
+                        {number}
+                      </span>
+
+                      <span className="flex-1 text-xs font-semibold">
+                        {label}
+                      </span>
+
+                      {active && <ChevronRight size={15} />}
+                    </button>
+                  );
+                })}
+              </nav>
+
+              <div className="border-t border-slate-100 p-4">
+                <div className="flex gap-3 rounded-xl bg-emerald-50 p-3.5">
+                  <ShieldCheck
+                    size={17}
+                    className="mt-0.5 shrink-0 text-emerald-600"
+                  />
+                  <p className="text-[11px] leading-5 text-slate-600">
+                    Applications are reviewed before onboarding. Applying
+                    does not guarantee selection.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <form
+            onSubmit={handleSubmit}
+            className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_12px_40px_rgba(15,23,42,0.07)]"
+          >
+            <div className="border-b border-slate-100 px-5 py-6 sm:px-8 lg:px-10">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600">
+                    Apply to join
+                  </p>
+
+                  <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950">
+                    Tell us about yourself
+                  </h2>
+
+                  <p className="mt-1 text-sm text-slate-500">
+                    Please provide accurate information so our team can review
+                    your application.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2">
+                  <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span className="text-xs font-semibold text-slate-600">
+                    Application open
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <section
+              id="role"
+              className="scroll-mt-28 border-b border-slate-100 px-6 py-8 sm:px-8 lg:px-10 lg:py-10"
+            >
+              <SectionHeading
+                number="01"
+                title="Choose your role"
+                description="Select how you want to contribute to the Growth Network."
+                icon={Users}
+              />
+
+              <div className="grid gap-4 md:grid-cols-2">
+                {[
+                  {
+                    value: "TEAM_LEADER" as const,
+                    icon: Users,
+                    title: "Team Leader",
+                    description:
+                      "Lead and coordinate a Growth Network team.",
+                  },
+                  {
+                    value: "EXECUTIVE" as const,
+                    icon: Megaphone,
+                    title: "Growth Executive",
+                    description:
+                      "Participate in outreach and student acquisition.",
+                  },
+                ].map((role) => {
+                  const selected = memberType === role.value;
+                  const Icon = role.icon;
+
+                  return (
+                    <button
+                      key={role.value}
+                      type="button"
+                      onClick={() => setMemberType(role.value)}
+                      className={`group relative rounded-2xl border p-5 text-left transition-all ${
+                        selected
+                          ? "border-blue-500 bg-blue-50/60 shadow-[0_0_0_3px_rgba(37,99,235,0.08)]"
+                          : "border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50/60"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div
+                          className={`flex h-11 w-11 items-center justify-center rounded-xl transition ${
+                            selected
+                              ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                              : "bg-slate-100 text-slate-500 group-hover:bg-blue-50 group-hover:text-blue-600"
+                          }`}
+                        >
+                          <Icon size={20} />
+                        </div>
+
+                        <div
+                          className={`flex h-6 w-6 items-center justify-center rounded-full border-2 ${
+                            selected
+                              ? "border-blue-600 bg-blue-600 text-white"
+                              : "border-slate-300 bg-white text-transparent"
+                          }`}
+                        >
+                          <Check size={13} strokeWidth={3} />
+                        </div>
+                      </div>
+
+                      <h3 className="mt-6 text-base font-bold text-slate-950">
+                        {role.title}
+                      </h3>
+
+                      <p className="mt-1.5 text-sm leading-6 text-slate-500">
+                        {role.description}
+                      </p>
+
+                      <div
+                        className={`mt-5 flex items-center gap-1 text-xs font-bold ${
+                          selected ? "text-blue-600" : "text-slate-400"
+                        }`}
+                      >
+                        {selected ? "Selected" : "Select role"}
+                        <ChevronRight size={14} />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section
+              id="personal"
+              className="scroll-mt-28 border-b border-slate-100 px-6 py-8 sm:px-8 lg:px-10 lg:py-10"
+            >
+              <SectionHeading
+                number="02"
+                title="Personal information"
+                description="Basic information required for application and communication."
+                icon={BriefcaseBusiness}
+              />
+
+              <div className="grid gap-x-5 gap-y-5 md:grid-cols-2">
+                <div>
+                  <FieldLabel required>Full name</FieldLabel>
+                  <input
+                    name="name"
+                    required
+                    className={inputClass}
+                    placeholder="Enter your full name"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel required>Email address</FieldLabel>
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    className={inputClass}
+                    placeholder="you@example.com"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel required>Phone number</FieldLabel>
+                  <input
+                    name="phone"
+                    required
+                    inputMode="numeric"
+                    pattern="[0-9]{10}"
+                    maxLength={10}
+                    className={inputClass}
+                    placeholder="10-digit mobile number"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>City</FieldLabel>
+                  <input
+                    name="city"
+                    className={inputClass}
+                    placeholder="Your city"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>State</FieldLabel>
+                  <input
+                    name="state"
+                    className={inputClass}
+                    placeholder="Your state"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Education</FieldLabel>
+                  <input
+                    name="education"
+                    className={inputClass}
+                    placeholder="Highest qualification"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Current occupation</FieldLabel>
+                  <input
+                    name="occupation"
+                    className={inputClass}
+                    placeholder="Student / Professional / Business"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Organization / College</FieldLabel>
+                  <input
+                    name="organization"
+                    className={inputClass}
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section
+              id="experience"
+              className="scroll-mt-28 border-b border-slate-100 px-6 py-8 sm:px-8 lg:px-10 lg:py-10"
+            >
+              <SectionHeading
+                number="03"
+                title="Experience & availability"
+                description="Help us understand your practical experience and the time you can contribute."
+                icon={GraduationCap}
+              />
+
+              <div className="grid gap-x-5 gap-y-5 md:grid-cols-2">
+                <div>
+                  <FieldLabel>Relevant experience</FieldLabel>
+                  <textarea
+                    name="experience"
+                    rows={4}
+                    className={textareaClass}
+                    placeholder="Marketing, sales, outreach, counselling, networking, etc."
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Availability</FieldLabel>
+                  <textarea
+                    name="availability"
+                    rows={4}
+                    className={textareaClass}
+                    placeholder="Example: 2–3 hours daily, evenings or weekends"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Preferred working mode</FieldLabel>
+                  <select
+                    name="workingMode"
+                    defaultValue=""
+                    className={`${inputClass} appearance-none`}
+                  >
+                    <option value="">Select working mode</option>
+                    <option value="Remote">Remote</option>
+                    <option value="Hybrid">Hybrid</option>
+                    <option value="Offline">Offline</option>
+                  </select>
+                </div>
+
+                <div>
+                  <FieldLabel>Leadership experience</FieldLabel>
+                  <textarea
+                    name="leadershipExperience"
+                    rows={4}
+                    className={textareaClass}
+                    placeholder="Describe any team coordination or leadership experience."
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Previous team size</FieldLabel>
+                  <input
+                    name="previousTeamSize"
+                    className={inputClass}
+                    placeholder="Example: 5"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Expected team size</FieldLabel>
+                  <input
+                    name="expectedTeamSize"
+                    className={inputClass}
+                    placeholder={
+                      memberType === "TEAM_LEADER"
+                        ? "For Team Leader applicants"
+                        : "Optional"
+                    }
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section
+              id="profiles"
+              className="scroll-mt-28 border-b border-slate-100 px-6 py-8 sm:px-8 lg:px-10 lg:py-10"
+            >
+              <SectionHeading
+                number="04"
+                title="Online presence"
+                description="Optional links that may help us understand your professional presence."
+                icon={Globe2}
+              />
+
+              <div className="grid gap-5 md:grid-cols-3">
+                <div>
+                  <FieldLabel>LinkedIn URL</FieldLabel>
+                  <input
+                    name="linkedinUrl"
+                    type="url"
+                    className={inputClass}
+                    placeholder="LinkedIn profile"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Instagram URL</FieldLabel>
+                  <input
+                    name="instagramUrl"
+                    type="url"
+                    className={inputClass}
+                    placeholder="Instagram profile"
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel>Portfolio URL</FieldLabel>
+                  <input
+                    name="portfolioUrl"
+                    type="url"
+                    className={inputClass}
+                    placeholder="Portfolio / website"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section
+              id="referral"
+              className="scroll-mt-28 border-b border-slate-100 px-6 py-8 sm:px-8 lg:px-10 lg:py-10"
+            >
+              <SectionHeading
+                number="05"
+                title="Referral information"
+                description="If a Growth Network member referred you, enter their referral code."
+                icon={Handshake}
+              />
+
+              <div className="max-w-xl">
+                <FieldLabel>Referral code</FieldLabel>
+
+                <div className="relative">
+                  <Handshake
+                    size={17}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+
+                  <input
+                    name="ref"
+                    value={referralCode}
+                    onChange={(event) =>
+                      setReferralCode(event.target.value)
+                    }
+                    className={`${inputClass} pl-11 uppercase`}
+                    placeholder="Optional referral code"
+                  />
+                </div>
+
+                <p className="mt-2 text-xs text-slate-400">
+                  Leave this blank if you were not referred by an existing
+                  member.
+                </p>
+              </div>
+            </section>
+
+            <section
+              id="declarations"
+              className="scroll-mt-28 px-6 py-8 sm:px-8 lg:px-10 lg:py-10"
+            >
+              <SectionHeading
+                number="06"
+                title="Responsibilities & declarations"
+                description="Please review and confirm each statement before submitting your application."
+                icon={ShieldCheck}
+              />
+
+              <div className="space-y-3">
+                <Declaration name="responsibilitiesAccepted">
+                  I understand and accept the responsibilities associated
+                  with my selected Growth Network role.
+                </Declaration>
+
+                <Declaration name="declarationsAccepted">
+                  I confirm that the information provided in this application
+                  is accurate to the best of my knowledge.
+                </Declaration>
+
+                <Declaration
+                  name="marketingPolicyAccepted"
+                  accent
+                >
+                  I agree to follow TechSkillHub&apos;s marketing,
+                  communication and outreach guidelines and will not make
+                  unauthorized promises or claims.
+                </Declaration>
+
+                <Declaration name="termsAccepted">
+                  I understand that submitting this application does not
+                  guarantee selection, onboarding, admission-related work,
+                  or commission.
+                </Declaration>
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-5">
+                <div className="flex gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-emerald-600 shadow-sm ring-1 ring-emerald-100">
+                    <ShieldCheck size={18} />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">
+                      Before you submit
+                    </p>
+
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      No investment is required to apply. Selection and
+                      onboarding are subject to TechSkillHub review and
+                      applicable requirements.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm font-medium leading-6 text-red-700">
+                  {error}
+                </div>
+              )}
+
+              <div className="mt-8 flex flex-col justify-between gap-5 border-t border-slate-100 pt-7 sm:flex-row sm:items-center">
+                <div>
+                  <p className="text-sm font-bold text-slate-800">
+                    Ready to apply?
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Review your information before submitting.
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex min-w-[210px] items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 size={17} className="animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      Submit application
+                      <ArrowRight size={17} />
+                    </>
+                  )}
+                </button>
+              </div>
+            </section>
+          </form>
+        </div>
+      </div>
+
+      <footer className="border-t border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-2 px-5 py-6 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-12">
+          <p>© 2026 TechSkillHub. All rights reserved.</p>
+
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={14} className="text-emerald-500" />
+            <span>Secure Growth Network application portal</span>
+          </div>
+        </div>
+      </footer>
+    </main>
+  );
+}

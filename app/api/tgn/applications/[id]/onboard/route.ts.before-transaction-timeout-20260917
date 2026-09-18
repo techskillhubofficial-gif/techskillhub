@@ -1,0 +1,482 @@
+import { NextResponse } from "next/server";
+import {
+  Role,
+  TgnApplicationStatus,
+  TgnAuditAction,
+  TgnMemberStatus,
+  TgnMemberType,
+  TgnTeamStatus,
+} from "@prisma/client";
+import bcrypt from "bcrypt";
+import { randomBytes } from "crypto";
+
+import { prisma } from "@/lib/prisma";
+import {
+  canManageNetwork,
+  getTgnContext,
+} from "@/lib/tgn/authorization";
+import {
+  createAccountSetupToken,
+  getAccountSetupUrl,
+  sendTgnAccountSetupEmail,
+} from "@/lib/tgn/account-setup";
+
+export const dynamic = "force-dynamic";
+
+function generateReferralCode(name: string) {
+  const prefix =
+    name
+      .trim()
+      .split(/\s+/)
+      .map((part) => part[0])
+      .join("")
+      .replace(/[^A-Za-z0-9]/g, "")
+      .slice(0, 4)
+      .toUpperCase() || "TGN";
+
+  return `TGN-${prefix}-${randomBytes(3).toString("hex").toUpperCase()}`;
+}
+
+function generateTeamCode() {
+  return `TGN-${randomBytes(4).toString("hex").toUpperCase()}`;
+}
+
+function roleLabel(memberType: TgnMemberType) {
+  return memberType === TgnMemberType.TEAM_LEADER
+    ? "Team Leader"
+    : "Growth Executive";
+}
+
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const context = await getTgnContext();
+
+    if (!canManageNetwork(context)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "TGN network management access is required.",
+        },
+        { status: 403 },
+      );
+    }
+
+    const { id } = await params;
+
+    let body: { teamLeaderMemberId?: string } = {};
+
+    try {
+      body = await request.json();
+    } catch {
+      body = {};
+    }
+
+    const application = await prisma.tgnApplication.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (!application) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "TGN application not found.",
+        },
+        { status: 404 },
+      );
+    }
+
+    if (
+      application.status !== TgnApplicationStatus.APPROVED &&
+      application.status !== TgnApplicationStatus.ONBOARDING
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Only approved or already-onboarding applications can be onboarded.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (
+      application.memberType !== TgnMemberType.TEAM_LEADER &&
+      application.memberType !== TgnMemberType.EXECUTIVE
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid TGN member type.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      application.memberType === TgnMemberType.EXECUTIVE &&
+      !body.teamLeaderMemberId
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "A Team Leader must be selected before onboarding a Growth Executive.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      let user = application.user
+        ? await tx.user.findUnique({
+            where: { id: application.user.id },
+          })
+        : await tx.user.findUnique({
+            where: { email: application.email },
+          });
+
+      const userRole =
+        application.memberType === TgnMemberType.TEAM_LEADER
+          ? Role.TGN_TEAM_LEADER
+          : Role.TGN_EXECUTIVE;
+
+      if (!user) {
+        const temporaryPassword = randomBytes(32).toString("hex");
+        const passwordHash = await bcrypt.hash(temporaryPassword, 12);
+
+        user = await tx.user.create({
+          data: {
+            name: application.name,
+            email: application.email,
+            phone: application.phone,
+            password: passwordHash,
+            role: userRole,
+          },
+        });
+      } else if (
+        user.role !== userRole &&
+        user.role !== Role.ADMIN
+      ) {
+        user = await tx.user.update({
+          where: { id: user.id },
+          data: {
+            role: userRole,
+            name: application.name,
+            phone: application.phone,
+          },
+        });
+      }
+
+      let member = await tx.tgnMemberProfile.findUnique({
+        where: { userId: user.id },
+      });
+
+      if (member && member.memberType !== application.memberType) {
+        throw new Error(
+          "The existing TGN member profile has a different member type.",
+        );
+      }
+
+      if (!member) {
+        let referralCode = generateReferralCode(application.name);
+
+        for (let attempt = 0; attempt < 10; attempt += 1) {
+          const existingReferral = await tx.tgnMemberProfile.findUnique({
+            where: { referralCode },
+            select: { id: true },
+          });
+
+          if (!existingReferral) break;
+
+          referralCode = generateReferralCode(application.name);
+        }
+
+        member = await tx.tgnMemberProfile.create({
+          data: {
+            userId: user.id,
+            memberType: application.memberType,
+            status: TgnMemberStatus.ONBOARDING,
+            referralCode,
+          },
+        });
+
+        await tx.tgnAuditEvent.create({
+          data: {
+            action: TgnAuditAction.MEMBER_CREATED,
+            applicationId: application.id,
+            actorUserId: context.userId,
+            memberId: member.id,
+            metadata: {
+              memberType: application.memberType,
+              email: application.email,
+            },
+          },
+        });
+      } else {
+        member = await tx.tgnMemberProfile.update({
+          where: { id: member.id },
+          data: {
+            status: TgnMemberStatus.ONBOARDING,
+            memberType: application.memberType,
+          },
+        });
+      }
+
+      let teamId = member.teamId;
+      let managerId = member.managerId;
+
+      if (application.memberType === TgnMemberType.TEAM_LEADER) {
+        const existingLedTeam = await tx.tgnTeam.findFirst({
+          where: {
+            leaderMemberId: member.id,
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (existingLedTeam) {
+          teamId = existingLedTeam.id;
+        } else {
+          let teamCode = generateTeamCode();
+
+          for (let attempt = 0; attempt < 10; attempt += 1) {
+            const existingCode = await tx.tgnTeam.findUnique({
+              where: { code: teamCode },
+              select: { id: true },
+            });
+
+            if (!existingCode) break;
+
+            teamCode = generateTeamCode();
+          }
+
+          const team = await tx.tgnTeam.create({
+            data: {
+              name: `${application.name.trim()} Team`,
+              code: teamCode,
+              description:
+                "TechSkillHub Growth Network team led by the onboarded Team Leader.",
+              status: TgnTeamStatus.ACTIVE,
+              leaderMemberId: member.id,
+            },
+          });
+
+          teamId = team.id;
+
+          await tx.tgnAuditEvent.create({
+            data: {
+              action: TgnAuditAction.TEAM_CREATED,
+              applicationId: application.id,
+              actorUserId: context.userId,
+              memberId: member.id,
+              metadata: {
+                teamId: team.id,
+                teamCode: team.code,
+                leaderMemberId: member.id,
+              },
+            },
+          });
+        }
+
+        managerId = null;
+      } else {
+        const teamLeader = await tx.tgnMemberProfile.findUnique({
+          where: {
+            id: body.teamLeaderMemberId!,
+          },
+          include: {
+            team: true,
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+        });
+
+        if (!teamLeader) {
+          throw new Error("Selected Team Leader was not found.");
+        }
+
+        if (teamLeader.memberType !== TgnMemberType.TEAM_LEADER) {
+          throw new Error("Selected member is not a Team Leader.");
+        }
+
+        if (
+          teamLeader.status !== TgnMemberStatus.ONBOARDING &&
+          teamLeader.status !== TgnMemberStatus.ORIENTATION &&
+          teamLeader.status !== TgnMemberStatus.ACTIVE
+        ) {
+          throw new Error(
+            "The selected Team Leader is not currently available for team assignment.",
+          );
+        }
+
+        if (!teamLeader.team) {
+          throw new Error(
+            "The selected Team Leader does not have an active team yet.",
+          );
+        }
+
+        teamId = teamLeader.team.id;
+        managerId = teamLeader.id;
+
+        const assignmentChanged =
+          member.teamId !== teamLeader.team.id ||
+          member.managerId !== teamLeader.id;
+
+        if (assignmentChanged) {
+          await tx.tgnAuditEvent.create({
+            data: {
+              action: TgnAuditAction.MEMBER_ASSIGNED,
+              applicationId: application.id,
+              actorUserId: context.userId,
+              memberId: member.id,
+              metadata: {
+                teamId: teamLeader.team.id,
+                teamLeaderMemberId: teamLeader.id,
+                managerId: teamLeader.id,
+              },
+            },
+          });
+        }
+      }
+
+      await tx.tgnMemberProfile.update({
+        where: { id: member.id },
+        data: {
+          status: TgnMemberStatus.ONBOARDING,
+          teamId,
+          managerId,
+          joinedAt: member.joinedAt ?? new Date(),
+        },
+      });
+
+      const onboardedMember = await tx.tgnMemberProfile.findUnique({
+        where: { id: member.id },
+        include: {
+          team: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          manager: {
+            select: {
+              id: true,
+              user: {
+                select: {
+                  name: true,
+                  email: true,
+                },
+              },
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+            },
+          },
+        },
+      });
+
+      if (!onboardedMember) {
+        throw new Error("Unable to load the onboarded TGN member.");
+      }
+
+      await tx.tgnApplication.update({
+        where: { id: application.id },
+        data: {
+          userId: user.id,
+          status: TgnApplicationStatus.ONBOARDING,
+        },
+      });
+
+      return {
+        user,
+        member: onboardedMember,
+      };
+    });
+
+    let setupEmailSent = false;
+    let setupEmailError: string | null = null;
+
+    try {
+      const setupToken = await createAccountSetupToken(result.user.id);
+      const setupUrl = getAccountSetupUrl(setupToken);
+
+      await sendTgnAccountSetupEmail(
+        result.user.email,
+        result.user.name,
+        roleLabel(application.memberType),
+        setupUrl,
+      );
+
+      setupEmailSent = true;
+    } catch (emailError) {
+      console.error("TGN account setup email error:", emailError);
+
+      setupEmailError =
+        emailError instanceof Error
+          ? emailError.message
+          : "Unable to send account setup email.";
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: setupEmailSent
+          ? "TGN member onboarded successfully. Account setup email sent."
+          : "TGN member onboarded successfully. Account setup email could not be sent.",
+        setupEmailSent,
+        ...(process.env.NODE_ENV !== "production" && setupEmailError
+          ? { setupEmailError }
+          : {}),
+        member: {
+          id: result.member.id,
+          memberType: result.member.memberType,
+          status: result.member.status,
+          referralCode: result.member.referralCode,
+          team: result.member.team,
+          manager: result.member.manager,
+          user: result.member.user,
+        },
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    console.error("TGN member onboarding error:", error);
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unable to onboard TGN member.";
+
+    return NextResponse.json(
+      {
+        success: false,
+        message,
+      },
+      { status: 500 },
+    );
+  }
+}
