@@ -21,6 +21,11 @@ export default async function DashboardLayout({
 
   const role = session.user.role;
 
+  // TGN members use the dedicated Growth Network portal.
+  if (role === "TGN_TEAM_LEADER" || role === "TGN_EXECUTIVE") {
+    redirect("/growth-network/portal");
+  }
+
   // The Team Workspace is never available to students.
   if (role === "STUDENT") {
     redirect("/student-portal");
