@@ -59,7 +59,19 @@ export default function LoginPage() {
       }
 
       if (result?.ok) {
-        router.push("/dashboard");
+        const sessionResponse = await fetch("/api/auth/session", {
+          cache: "no-store",
+        });
+
+        const sessionData = await sessionResponse.json();
+        const role = sessionData?.user?.role;
+
+        router.push(
+          role === "TGN_TEAM_LEADER" || role === "TGN_EXECUTIVE"
+            ? "/growth-network/portal"
+            : "/dashboard",
+        );
+
         router.refresh();
         return;
       }
