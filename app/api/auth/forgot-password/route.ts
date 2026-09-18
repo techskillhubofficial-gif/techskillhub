@@ -23,10 +23,7 @@ function escapeHtml(value: string) {
 }
 
 function getBaseUrl() {
-  return (
-    process.env.NEXTAUTH_URL?.replace(/\/$/, "") ||
-    "https://techskillhub.online"
-  );
+  return "https://techskillhub.online";
 }
 
 function getSmtpTransporter() {
