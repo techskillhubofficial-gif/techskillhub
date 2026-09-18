@@ -82,24 +82,38 @@ export async function sendTgnAccountSetupEmail(
 
   const firstName = name.trim().split(/\s+/)[0] || "there";
 
+  const loginUrl = `${getBaseUrl()}/login`;
+
   const info = await transporter.sendMail({
     from,
     to: email,
     replyTo,
-    subject: "Complete your TechSkillHub Growth Network account setup",
+    subject: "Welcome to TechSkillHub Growth Network — Activate Your Account",
     text: `Hi ${firstName},
 
-Your TechSkillHub Growth Network account has been created.
+Welcome to the TechSkillHub Growth Network.
+
+Your TechSkillHub account has been created successfully.
 
 Role: ${roleLabel}
 
-Set your password and activate your account using this link:
+STEP 1 — ACTIVATE YOUR ACCOUNT
+
+Set your password using your secure activation link:
 
 ${setupUrl}
 
-This setup link expires in ${SETUP_TOKEN_EXPIRY_HOURS} hours.
+This activation link expires in ${SETUP_TOKEN_EXPIRY_HOURS} hours and can only be used for your account.
 
-If you did not apply to the TechSkillHub Growth Network, you can ignore this email.
+STEP 2 — SIGN IN
+
+After setting your password, sign in through the TechSkillHub Login Portal:
+
+${loginUrl}
+
+Please do not forward this email because the activation link is unique to your account.
+
+If you did not apply to the TechSkillHub Growth Network, you can safely ignore this email.
 
 TechSkillHub
 support@techskillhub.online`,
