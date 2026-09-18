@@ -262,7 +262,7 @@ export async function PATCH(
     if (body?.action === "UPDATE_EMAIL") {
       const nextEmail = clean(body?.email)?.toLowerCase() ?? null;
 
-      if (!nextEmail || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(nextEmail)) {
+      if (!nextEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) {
         return errorResponse("Please enter a valid email address.");
       }
 

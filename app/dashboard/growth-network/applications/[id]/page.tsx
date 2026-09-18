@@ -208,7 +208,7 @@ export default function TgnApplicationDetailPage() {
 
     const nextEmail = emailDraft.trim().toLowerCase();
 
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(nextEmail)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) {
       setError("Enter a valid email address.");
       return;
     }
