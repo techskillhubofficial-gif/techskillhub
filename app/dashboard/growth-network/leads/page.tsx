@@ -312,7 +312,7 @@ export default function GrowthNetworkLeadsPage() {
                         </div>
 
                         <Link
-                          href={`/dashboard/leads/${lead.id}`}
+                          href={`/dashboard/leads?lead=${encodeURIComponent(lead.id)}`}
                           className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-white"
                         >
                           CRM
