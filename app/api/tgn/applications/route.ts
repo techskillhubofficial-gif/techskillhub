@@ -326,7 +326,25 @@ export async function POST(request: Request) {
       );
     }
 
-    const sourceCode = clean(body?.ref);
+    const referrerCode = (() => {
+      const referrer = request.headers.get("referer");
+      if (!referrer) return null;
+
+      try {
+        return new URL(referrer).searchParams.get("ref");
+      } catch {
+        return null;
+      }
+    })();
+
+    const sourceCode =
+      clean(
+        body?.ref ??
+          body?.referralCode ??
+          body?.teamLeaderReferralCode ??
+          referrerCode,
+      )?.toUpperCase() ?? "";
+
 
     let sourceMemberId: string | null = null;
 
