@@ -177,14 +177,19 @@ export default function TgnApplicationDetailPage() {
 
     try {
       const response = await fetch(
-        "/api/tgn/members?memberType=TEAM_LEADER&status=ACTIVE",
+        "/api/tgn/members?memberType=TEAM_LEADER",
         { cache: "no-store" },
       );
 
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setTeamLeaders(data.members ?? []);
+        const availableLeaders = (data.members ?? []).filter(
+          (member: TeamLeader) =>
+            ["ONBOARDING", "ORIENTATION", "ACTIVE"].includes(member.status),
+        );
+
+        setTeamLeaders(availableLeaders);
       }
     } catch {
       // Non-blocking; onboarding will explain if no leader is available.
