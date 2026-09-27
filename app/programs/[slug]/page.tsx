@@ -176,6 +176,30 @@ export default async function ProgramPage({ params }: PageProps) {
                       </p>
                     </div>
                   </div>
+
+                  <div className="flex items-start gap-3">
+                    <BriefcaseBusiness className={`mt-0.5 h-5 w-5 ${tone.text}`} />
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500">
+                        Career support
+                      </p>
+                      <p className="mt-1 text-sm font-bold text-slate-900">
+                        Job placement assistance
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                      Program fee
+                    </p>
+                    <p className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+                      ₹49,999
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      Registration amount: ₹5,000. The remaining fee is handled through the admissions process.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

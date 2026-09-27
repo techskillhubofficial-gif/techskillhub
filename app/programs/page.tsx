@@ -160,9 +160,32 @@ export default function ProgramsPage() {
                     {program.description}
                   </p>
 
-                  <div className="mt-6 flex flex-wrap gap-2">
+                  <div className="mt-6 grid gap-2 sm:grid-cols-2">
+                    <div className="rounded-xl border border-white/80 bg-white/80 px-3.5 py-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                        Program fee
+                      </p>
+                      <p className="mt-1 text-base font-bold text-slate-950">
+                        ₹49,999
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-white/80 bg-white/80 px-3.5 py-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                        Career support
+                      </p>
+                      <p className="mt-1 text-sm font-bold text-slate-800">
+                        Job placement assistance
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
                     <span className="rounded-lg border border-white/80 bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-600">
                       {program.duration}
+                    </span>
+                    <span className="rounded-lg border border-white/80 bg-white/80 px-3 py-1.5 text-xs font-semibold text-slate-600">
+                      {program.mode}
                     </span>
                   </div>
 
