@@ -1,166 +1,122 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, BriefcaseBusiness, Code2 } from "lucide-react";
+
+const founders = [
+  {
+    name: "Manvendrasinh Solanki",
+    role: "Co-Founder & CEO",
+    icon: BriefcaseBusiness,
+    description:
+      "Driving the vision, product direction and long-term strategy of TechSkillHub with a focus on practical learning, career development and accessible digital education.",
+    tags: ["Vision", "Product", "Growth"],
+    accent: "from-blue-600 to-indigo-600",
+  },
+  {
+    name: "Mehul Khatiwal",
+    role: "Co-Founder & COO",
+    icon: Code2,
+    description:
+      "Leading execution, operations and learning experience with a focus on structured delivery, design and building a consistent experience for learners.",
+    tags: ["Operations", "Design", "Execution"],
+    accent: "from-indigo-600 to-violet-600",
+  },
+];
 
 export function Founder() {
   return (
-    <section className="bg-white py-24">
+    <section className="border-t border-slate-200 bg-white py-20 md:py-24">
       <div className="mx-auto max-w-7xl px-6">
-
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mx-auto mb-16 max-w-3xl text-center"
+        <div
+          className="mx-auto max-w-3xl text-center"
         >
-          <span className="rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700">
-            Meet The Founders
+          <span className="inline-flex rounded-full bg-blue-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
+            Meet the founders
           </span>
 
-          <h2 className="mt-6 text-5xl font-bold text-slate-900">
-            Building Careers, Not Just Courses
+          <h2 className="mt-5 text-3xl font-bold tracking-[-0.03em] text-slate-950 md:text-4xl">
+            Building the platform behind the learning experience.
           </h2>
 
-          <p className="mt-6 text-lg leading-8 text-slate-600">
-            We founded TechSkill Hub with one mission—to bridge the gap between
-            traditional education and industry requirements through practical,
-            AI-powered and career-focused learning.
+          <p className="mt-5 text-base leading-7 text-slate-600 md:text-lg">
+            TechSkillHub brings together practical education, technology and
+            career development in one connected learning experience.
           </p>
-        </motion.div>
-
-        <div className="grid gap-10 lg:grid-cols-2">
-
-          {/* Founder 1 */}
-
-          <motion.div
-            initial={{ opacity: 0, x: -40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="rounded-3xl border border-slate-200 bg-white p-10 shadow-lg"
-          >
-            <div className="flex items-center gap-6">
-
-              <div className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-5xl text-white">
-                👨🏻‍💼
-              </div>
-
-              <div>
-
-                <h3 className="text-3xl font-bold text-slate-900">
-                  Manvendrasinh Solanki
-                </h3>
-
-                <p className="mt-2 text-lg font-semibold text-blue-600">
-                  Co-Founder & CEO
-                </p>
-
-              </div>
-
-            </div>
-
-            <p className="mt-8 text-lg leading-8 text-slate-600">
-              Driving the vision, innovation and long-term strategy of
-              TechSkill Hub with a strong focus on helping students build
-              real-world skills, confidence and meaningful careers.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-
-              <span className="rounded-full bg-slate-100 px-4 py-2">
-                🚀 Vision
-              </span>
-
-              <span className="rounded-full bg-slate-100 px-4 py-2">
-                💡 Innovation
-              </span>
-
-              <span className="rounded-full bg-slate-100 px-4 py-2">
-                📈 Growth
-              </span>
-
-            </div>
-
-          </motion.div>
-
-          {/* Founder 2 */}
-
-          <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="rounded-3xl border border-slate-200 bg-white p-10 shadow-lg"
-          >
-            <div className="flex items-center gap-6">
-
-              <div className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-5xl text-white">
-                👨🏻‍💻
-              </div>
-
-              <div>
-
-                <h3 className="text-3xl font-bold text-slate-900">
-                  Mehul Khatiwal
-                </h3>
-
-                <p className="mt-2 text-lg font-semibold text-purple-600">
-                  Co-Founder & COO
-                </p>
-
-              </div>
-
-            </div>
-
-            <p className="mt-8 text-lg leading-8 text-slate-600">
-              Leading execution, operations and student success by ensuring
-              every learner receives world-class mentorship, structured
-              learning and continuous support throughout the journey.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-
-              <span className="rounded-full bg-slate-100 px-4 py-2">
-                ⚙️ Operations
-              </span>
-
-              <span className="rounded-full bg-slate-100 px-4 py-2">
-                🤝 Student Success
-              </span>
-
-              <span className="rounded-full bg-slate-100 px-4 py-2">
-                📚 Execution
-              </span>
-
-            </div>
-
-          </motion.div>
-
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mx-auto mt-20 max-w-5xl rounded-[32px] bg-slate-900 p-12 text-center text-white"
-        >
-          <h3 className="text-4xl font-bold">
-            Our Shared Mission
-          </h3>
+        <div className="mt-12 grid gap-5 lg:grid-cols-2">
+          {founders.map((founder, index) => {
+            const Icon = founder.icon;
 
-          <p className="mt-8 text-xl leading-9 text-slate-300">
-            "We're building more than an EdTech platform. We're creating a
-            career ecosystem where students learn by doing, build real
-            portfolios, master AI-powered workflows and graduate ready for
-            industry—not just exams."
+            return (
+              <article
+                key={founder.name}
+                className="rounded-[28px] border border-slate-200 bg-white p-7 shadow-[0_18px_45px_-35px_rgba(15,23,42,0.35)] md:p-8"
+              >
+                <div className="flex items-center gap-5">
+                  <div
+                    className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${founder.accent} text-white shadow-lg`}
+                  >
+                    <Icon className="h-7 w-7" />
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-950 md:text-2xl">
+                      {founder.name}
+                    </h3>
+
+                    <p className="mt-1 text-sm font-semibold text-blue-600">
+                      {founder.role}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="mt-6 text-[15px] leading-7 text-slate-600">
+                  {founder.description}
+                </p>
+
+                <div className="mt-6 flex flex-wrap gap-2">
+                  {founder.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        <div
+          className="mx-auto mt-10 max-w-5xl rounded-[28px] border border-blue-100 bg-blue-50/60 px-7 py-10 text-center md:px-12 md:py-12"
+        >
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">
+            Our mission
           </p>
 
-          <button className="mt-10 inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 font-semibold text-slate-900 transition hover:scale-105">
-            Book FREE Career Consultation
-            <ArrowRight size={18} />
-          </button>
+          <h3 className="mt-3 text-2xl font-bold tracking-[-0.02em] text-slate-950 md:text-3xl">
+            Building India's future workforce.
+          </h3>
 
-        </motion.div>
+          <p className="mx-auto mt-5 max-w-3xl text-base leading-7 text-slate-600">
+            We are building more than a course library — a connected
+            experience where learners can choose a path, develop practical
+            skills, build projects, track progress and prepare for the
+            workplace.
+          </p>
 
+          <Link
+            href="/consultation"
+            className="mt-7 inline-flex items-center rounded-xl bg-blue-600 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-blue-50"
+          >
+            Get Career Guidance
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </div>
       </div>
     </section>
   );

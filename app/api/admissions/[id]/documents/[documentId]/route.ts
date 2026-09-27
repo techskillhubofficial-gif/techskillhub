@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getAdminTgnScope } from "@/lib/tgn/admin-scope";
 
 const VALID_STATUSES = [
   "PENDING",
@@ -24,6 +25,18 @@ export async function GET(
   },
 ) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        { status: 403 },
+      );
+    }
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -43,7 +56,16 @@ export async function GET(
       await prisma.admissionDocument.findFirst({
         where: {
           id: documentId,
-          admissionId: id,
+          admission: adminScope.isTgnScoped
+            ? {
+                id,
+                lead: {
+                  is: adminScope.leadWhere,
+                },
+              }
+            : {
+                id,
+              },
         },
       });
 
@@ -88,6 +110,18 @@ export async function PATCH(
   },
 ) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        { status: 403 },
+      );
+    }
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -128,7 +162,16 @@ export async function PATCH(
       await prisma.admissionDocument.findFirst({
         where: {
           id: documentId,
-          admissionId: id,
+          admission: adminScope.isTgnScoped
+            ? {
+                id,
+                lead: {
+                  is: adminScope.leadWhere,
+                },
+              }
+            : {
+                id,
+              },
         },
       });
 
@@ -143,9 +186,16 @@ export async function PATCH(
     }
 
     const admission =
-      await prisma.admission.findUnique({
+      await prisma.admission.findFirst({
         where: {
           id,
+          ...(adminScope.isTgnScoped
+            ? {
+                lead: {
+                  is: adminScope.leadWhere,
+                },
+              }
+            : {}),
         },
         select: {
           id: true,

@@ -17,6 +17,8 @@ import {
   normalizeLeadIdentifiers,
 } from "@/lib/leads/normalization";
 
+import { getAdminTgnScope } from "@/lib/tgn/admin-scope";
+
 export const dynamic = "force-dynamic";
 
 interface DuplicateLead {
@@ -120,15 +122,16 @@ function buildLeadSearchWhere(
   return where;
 }
 
-async function getLeadStats() {
+async function getLeadStats(scope: Prisma.LeadWhereInput = {}) {
   const [counts, total] = await Promise.all([
     prisma.lead.groupBy({
+      where: scope,
       by: ["status"],
       _count: {
         _all: true,
       },
     }),
-    prisma.lead.count(),
+    prisma.lead.count({ where: scope }),
   ]);
 
   return {
@@ -300,14 +303,25 @@ export async function GET(req: Request) {
       return jsonError("Invalid lead status");
     }
 
+    const adminScope = await getAdminTgnScope();
+
     const where = buildLeadSearchWhere(
       search,
       status,
     );
 
+    const scopedWhere = adminScope.isTgnScoped
+      ? {
+          AND: [
+            where,
+            adminScope.leadWhere,
+          ],
+        }
+      : where;
+
     const [leads, stats] = await Promise.all([
       prisma.lead.findMany({
-        where,
+        where: scopedWhere,
         orderBy: {
           createdAt: "desc",
         },
@@ -330,7 +344,11 @@ export async function GET(req: Request) {
         },
       }),
 
-      getLeadStats(),
+      getLeadStats(
+        adminScope.isTgnScoped
+          ? adminScope.leadWhere
+          : {},
+      ),
     ]);
 
     return NextResponse.json({
@@ -362,6 +380,7 @@ export async function GET(req: Request) {
  */
 export async function POST(req: Request) {
   try {
+    const adminScope = await getAdminTgnScope();
     const body = await req.json();
 
     if (
@@ -515,7 +534,17 @@ export async function POST(req: Request) {
               : []),
           ],
         },
-      },
+
+        ...(adminScope.isTgnScoped && adminScope.tgnMemberId
+          ? {
+              tgnOwner: {
+                connect: {
+                  id: adminScope.tgnMemberId,
+                },
+              },
+            }
+          : {}),
+},
     });
 
     return NextResponse.json(
@@ -529,17 +558,14 @@ export async function POST(req: Request) {
       },
       { status: 201 },
     );
-  } catch (error) {
-    console.error("POST Lead Error:", error);
+    } catch (error) {
+      console.error("POST Lead Error:", error);
 
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Failed to create lead",
-      },
-      { status: 500 },
-    );
-  }
+      return NextResponse.json(
+        { success: false, message: "Failed to create lead" },
+        { status: 500 },
+      );
+    }
 }
 
 /**
@@ -552,6 +578,7 @@ export async function POST(req: Request) {
  */
 export async function PATCH(req: Request) {
   try {
+    const adminScope = await getAdminTgnScope();
     const body = await req.json();
 
     if (
@@ -575,9 +602,16 @@ export async function PATCH(req: Request) {
     const leadId = requestBody.id.trim();
 
     const existingLead =
-      await prisma.lead.findUnique({
+      await prisma.lead.findFirst({
         where: {
-          id: leadId,
+          AND: [
+            {
+              id: leadId,
+            },
+            ...(adminScope.isTgnScoped
+              ? [adminScope.leadWhere]
+              : []),
+          ],
         },
       });
 
@@ -889,10 +923,22 @@ export async function DELETE(req: Request) {
       );
     }
 
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return jsonError(
+        "Unauthorized",
+        403,
+      );
+    }
+
     const existingLead =
-      await prisma.lead.findUnique({
+      await prisma.lead.findFirst({
         where: {
           id,
+          ...(adminScope.isTgnScoped
+            ? adminScope.leadWhere
+            : {}),
         },
         select: {
           id: true,

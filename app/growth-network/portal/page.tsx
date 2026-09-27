@@ -17,6 +17,7 @@ export default async function TgnMemberPortalPage() {
   }
 
   if (
+    context.access !== "NETWORK_MANAGER" &&
     context.access !== "TEAM_LEADER" &&
     context.access !== "EXECUTIVE"
   ) {
@@ -82,9 +83,14 @@ export default async function TgnMemberPortalPage() {
       },
 
       directReports: {
-        where: {
-          memberType: "EXECUTIVE",
-        },
+        where:
+          context.access === "TEAM_LEADER"
+            ? {
+                memberType: "EXECUTIVE",
+              }
+            : {
+                id: "__tgn_no_direct_report__",
+              },
         orderBy: {
           createdAt: "asc",
         },
@@ -107,16 +113,53 @@ export default async function TgnMemberPortalPage() {
     redirect("/login");
   }
 
-  const isTeamLeader = context.access === "TEAM_LEADER";
+  const isNetworkManager =
+    context.access === "NETWORK_MANAGER";
+  const isTeamLeader =
+    context.access === "TEAM_LEADER";
 
-  const accessibleMemberIds = [
-    context.memberId,
-    ...member.directReports.map((person) => person.id),
-  ];
+  const networkMemberIds = isNetworkManager
+    ? (
+        await prisma.tgnMemberProfile.findMany({
+          select: {
+            id: true,
+          },
+        })
+      ).map((person) => person.id)
+    : [];
+
+  const accessibleMemberIds = isNetworkManager
+    ? networkMemberIds
+    : [
+        context.memberId,
+        ...member.directReports.map(
+          (person) => person.id,
+        ),
+      ];
 
   const thirtyDaysAgo = new Date(
     Date.now() - 30 * 24 * 60 * 60 * 1000,
   );
+
+  const [
+    networkTeamLeaders,
+    networkExecutives,
+    networkTeams,
+  ] = isNetworkManager
+    ? await Promise.all([
+        prisma.tgnMemberProfile.count({
+          where: {
+            memberType: "TEAM_LEADER",
+          },
+        }),
+        prisma.tgnMemberProfile.count({
+          where: {
+            memberType: "EXECUTIVE",
+          },
+        }),
+        prisma.tgnTeam.count(),
+      ])
+    : [0, 0, 0];
 
   const [
     leads,
@@ -380,7 +423,11 @@ export default async function TgnMemberPortalPage() {
         name: member.user.name || "TGN Member",
         firstName,
         email: member.user.email || "",
-        role: isTeamLeader ? "TEAM_LEADER" : "EXECUTIVE",
+        role: isNetworkManager
+          ? "NETWORK_MANAGER"
+          : isTeamLeader
+            ? "TEAM_LEADER"
+            : "EXECUTIVE",
         memberType: member.memberType,
         status: member.status,
         referralCode: member.referralCode,
@@ -430,6 +477,13 @@ export default async function TgnMemberPortalPage() {
         },
 
         commissions: commissionTotals,
+
+        network: {
+          members: networkMemberIds.length,
+          teamLeaders: networkTeamLeaders,
+          executives: networkExecutives,
+          teams: networkTeams,
+        },
 
         recentLeads: leads.slice(0, 12).map((lead) => ({
           id: lead.id,

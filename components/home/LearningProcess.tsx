@@ -1,195 +1,128 @@
 "use client";
 
-import { motion } from "framer-motion";
 import {
-  Compass,
+  ArrowRight,
   BookOpen,
-  MonitorPlay,
-  FolderGit2,
+  Compass,
+  FolderKanban,
+  LineChart,
   Sparkles,
-  Briefcase,
 } from "lucide-react";
+import Link from "next/link";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Container } from "@/components/layout/Container";
 
 const steps = [
   {
+    number: "01",
     icon: Compass,
-    title: "Free Career Consultation",
+    title: "Choose your path",
     description:
-      "Understand your goals, strengths and choose the right flagship program with expert guidance.",
+      "Explore career programs or speak with us if you are unsure which direction fits your goals.",
   },
   {
+    number: "02",
     icon: BookOpen,
-    title: "Enrollment & Onboarding",
+    title: "Learn practical skills",
     description:
-      "Get LMS access, join the student community, meet mentors and receive your personalized roadmap.",
+      "Follow a structured learning journey with lessons, resources, guidance and hands-on practice.",
   },
   {
-    icon: MonitorPlay,
-    title: "Live Interactive Classes",
+    number: "03",
+    icon: FolderKanban,
+    title: "Build real projects",
     description:
-      "Attend live sessions, ask questions, access recordings and learn from industry professionals.",
+      "Apply your learning through assignments and practical projects that become part of your portfolio.",
   },
   {
-    icon: FolderGit2,
-    title: "Build Real Projects",
+    number: "04",
+    icon: LineChart,
+    title: "Track your progress",
     description:
-      "Work on weekly assignments, portfolio projects and industry-level capstone applications.",
+      "Use the TechSkillHub learning platform to follow your courses, work, submissions and progress.",
   },
   {
+    number: "05",
     icon: Sparkles,
-    title: "AI Powered Learning",
+    title: "Prepare for the workplace",
     description:
-      "Use AI tools, coding assistants and personalized learning recommendations throughout your journey.",
-  },
-  {
-    icon: Briefcase,
-    title: "Career Accelerator",
-    description:
-      "Resume building, LinkedIn optimization, mock interviews and placement assistance until you're job-ready.",
-  },
-];
-
-const stats = [
-  {
-    value: "10,000+",
-    label: "Students Trained",
-  },
-  {
-    value: "95%",
-    label: "Placement Assistance",
-  },
-  {
-    value: "500+",
-    label: "Industry Projects",
-  },
-  {
-    value: "150+",
-    label: "Hiring Partners",
+      "Develop the practical confidence, portfolio and career readiness needed to take your next professional step.",
   },
 ];
 
 export function LearningProcess() {
   return (
-    <section className="bg-white py-24">
-      <div className="mx-auto max-w-7xl px-6">
+    <section className="border-y border-slate-200/70 bg-slate-50/70 py-14 md:py-18">
+      <Container>
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600">
+            How your learning journey works
+          </p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mx-auto mb-20 max-w-3xl text-center"
-        >
-          <span className="rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700">
-            🚀 How Learning Works
-          </span>
-
-          <h2 className="mt-6 text-5xl font-bold">
-            Your Journey From Beginner To Professional
+          <h2 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-slate-950 md:text-4xl">
+            From learning to workplace readiness
           </h2>
 
-          <p className="mt-6 text-lg text-slate-600">
-            We don't just teach. We mentor, guide, build projects with you and
-            prepare you for real careers.
+          <p className="mt-5 text-base leading-7 text-slate-600 md:text-lg">
+            A connected journey that brings career guidance, learning,
+            projects and progress into one experience.
           </p>
-        </motion.div>
+        </div>
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="relative mt-14">
+          <div className="absolute left-[10%] right-[10%] top-7 hidden h-px bg-slate-200 lg:block" />
 
-          {steps.map((step, index) => {
-            const Icon = step.icon;
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
 
-            return (
-              <motion.div
-                key={step.title}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <Card className="h-full rounded-3xl border-0 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
-                  <CardContent className="p-8">
+              return (
+                <div
+                  key={step.number}
+                  className="relative"
+                >
+                  <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-100 bg-white text-blue-600 shadow-sm">
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </div>
 
-                    <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                      <Icon size={30} />
-                    </div>
+                  <div className="mt-5 text-center">
+                    <p className="text-xs font-bold tracking-[0.14em] text-blue-600">
+                      STEP {step.number}
+                    </p>
 
-                    <div className="mb-4 inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm font-medium">
-                      Step {index + 1}
-                    </div>
-
-                    <h3 className="text-2xl font-semibold">
+                    <h3 className="mt-2 text-lg font-bold text-slate-950">
                       {step.title}
                     </h3>
 
-                    <p className="mt-4 leading-7 text-slate-600">
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
                       {step.description}
                     </p>
-
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="mt-24 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-
-          {stats.map((stat) => (
-            <Card
-              key={stat.label}
-              className="rounded-3xl border-0 bg-slate-900 text-white shadow-xl"
-            >
-              <CardContent className="p-8 text-center">
-                <h3 className="text-4xl font-bold text-blue-400">
-                  {stat.value}
-                </h3>
-
-                <p className="mt-3 text-slate-300">
-                  {stat.label}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-
-        </div>
-
-        <div className="mt-24 rounded-3xl bg-gradient-to-r from-blue-600 to-purple-700 p-12 text-center text-white">
-
-          <h2 className="text-4xl font-bold">
-            Ready To Start Your Journey?
-          </h2>
-
-          <p className="mx-auto mt-5 max-w-2xl text-lg text-blue-100">
-            Book a FREE career consultation and get a personalized roadmap
-            towards your dream tech career.
-          </p>
-
-          <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-
-            <Button
-              size="lg"
-              className="bg-white text-blue-700 hover:bg-slate-100"
-            >
-              Book FREE Career Consultation
-            </Button>
-
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-white text-white hover:bg-white hover:text-blue-700"
-            >
-              Explore Programs
-            </Button>
-
+        <div className="mt-14 flex flex-col items-center justify-between gap-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:flex-row sm:p-8">
+          <div>
+            <p className="text-sm font-semibold text-blue-600">
+              Not sure where to start?
+            </p>
+            <h3 className="mt-1 text-xl font-bold text-slate-950">
+              Talk to us about your career goals.
+            </h3>
           </div>
 
+          <Link
+            href="/consultation"
+            className="group inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700"
+          >
+            Get Career Guidance
+            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </Link>
         </div>
-
-      </div>
+      </Container>
     </section>
   );
 }

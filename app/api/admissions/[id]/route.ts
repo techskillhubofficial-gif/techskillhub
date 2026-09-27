@@ -5,6 +5,8 @@ import {
   Prisma,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getAdminTgnScope } from "@/lib/tgn/admin-scope";
+
 
 export const dynamic = "force-dynamic";
 
@@ -36,15 +38,28 @@ export async function GET(
   context: RouteContext,
 ) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return errorResponse("Unauthorized", 403);
+    }
+
     const { id } = await context.params;
 
     if (!id?.trim()) {
       return errorResponse("Admission ID is required.");
     }
 
-    const admission = await prisma.admission.findUnique({
+    const admission = await prisma.admission.findFirst({
       where: {
         id: id.trim(),
+        ...(adminScope.isTgnScoped
+          ? {
+              lead: {
+                is: adminScope.leadWhere,
+              },
+            }
+          : {}),
       },
       include: {
         lead: {
@@ -183,15 +198,28 @@ export async function PATCH(
   context: RouteContext,
 ) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return errorResponse("Unauthorized", 403);
+    }
+
     const { id } = await context.params;
 
     if (!id?.trim()) {
       return errorResponse("Admission ID is required.");
     }
 
-    const admission = await prisma.admission.findUnique({
+    const admission = await prisma.admission.findFirst({
       where: {
         id: id.trim(),
+        ...(adminScope.isTgnScoped
+          ? {
+              lead: {
+                is: adminScope.leadWhere,
+              },
+            }
+          : {}),
       },
       include: {
         payments: true,
@@ -516,9 +544,22 @@ export async function DELETE(
       return errorResponse("Admission ID is required.");
     }
 
-    const existing = await prisma.admission.findUnique({
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return errorResponse("Unauthorized", 403);
+    }
+
+    const existing = await prisma.admission.findFirst({
       where: {
         id: id.trim(),
+        ...(adminScope.isTgnScoped
+          ? {
+              lead: {
+                is: adminScope.leadWhere,
+              },
+            }
+          : {}),
       },
       select: {
         id: true,

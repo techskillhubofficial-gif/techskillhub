@@ -10,6 +10,8 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getAdminTgnScope } from "@/lib/tgn/admin-scope";
+
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -121,6 +123,17 @@ function getPendingAmount(
 
 export async function GET(req: Request) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        { status: 403 },
+      );
+    }
     const { searchParams } = new URL(req.url);
 
     const search = cleanString(
@@ -154,6 +167,7 @@ export async function GET(req: Request) {
     }
 
     const where: Prisma.PaymentWhereInput = {};
+
 
     if (isPaymentStatus(status)) {
       where.status = status;
@@ -208,7 +222,18 @@ export async function GET(req: Request) {
       aggregateStats,
     ] = await Promise.all([
       prisma.payment.findMany({
-        where,
+        where: {
+          ...where,
+          ...(adminScope.isTgnScoped
+            ? {
+                admission: {
+                  lead: {
+                    is: adminScope.leadWhere,
+                  },
+                },
+              }
+            : {}),
+        },
         orderBy: [
           { paymentDate: "desc" },
           { createdAt: "desc" },
@@ -380,6 +405,17 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unauthorized",
+        },
+        { status: 403 },
+      );
+    }
     let body: unknown;
 
     try {
@@ -484,9 +520,16 @@ export async function POST(req: Request) {
     }
 
     const admission =
-      await prisma.admission.findUnique({
+      await prisma.admission.findFirst({
         where: {
           id: admissionId,
+          ...(adminScope.isTgnScoped
+            ? {
+                lead: {
+                  is: adminScope.leadWhere,
+                },
+              }
+            : {}),
         },
         select: {
           id: true,

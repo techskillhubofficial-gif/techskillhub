@@ -15,6 +15,7 @@ import {
   canManageNetwork,
   getTgnContext,
 } from "@/lib/tgn/authorization";
+import { getTgnAccessibleMemberIds } from "@/lib/tgn/hierarchy";
 import {
   createAccountSetupToken,
   getAccountSetupUrl,
@@ -74,8 +75,20 @@ export async function POST(
       body = {};
     }
 
-    const application = await prisma.tgnApplication.findUnique({
-      where: { id },
+    const accessibleMemberIds = await getTgnAccessibleMemberIds(context);
+    const isFounder = context.access === "FOUNDER";
+
+    const application = await prisma.tgnApplication.findFirst({
+      where: {
+        id,
+        ...(isFounder
+          ? {}
+          : {
+              sourceMemberId: {
+                in: accessibleMemberIds ?? [],
+              },
+            }),
+      },
       include: {
         user: {
           select: {
@@ -151,6 +164,7 @@ export async function POST(
           id: true,
           memberType: true,
           status: true,
+          managerId: true,
           team: {
             select: {
               id: true,
@@ -176,6 +190,20 @@ export async function POST(
             message: "Selected member is not a Team Leader.",
           },
           { status: 400 },
+        );
+      }
+
+      if (
+        context.access === "NETWORK_MANAGER" &&
+        teamLeader.managerId !== context.memberId
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "The selected Team Leader is outside your Network Manager hierarchy.",
+          },
+          { status: 403 },
         );
       }
 
@@ -407,7 +435,14 @@ export async function POST(
             createdTeam = team;
           }
 
-          managerId = null;
+          // A Team Leader onboarded by a Network Manager must
+          // report to that Network Manager. Founder onboarding
+          // remains unassigned unless a future explicit manager
+          // assignment is provided.
+          managerId =
+            context.access === "NETWORK_MANAGER"
+              ? context.memberId
+              : null;
         } else {
           teamId = assignedTeamId;
           managerId = assignedTeamLeaderId;

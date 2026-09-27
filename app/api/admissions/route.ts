@@ -6,6 +6,8 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { getAdminTgnScope } from "@/lib/tgn/admin-scope";
+
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -199,6 +201,15 @@ export async function GET(
   req: Request,
 ) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return errorResponse(
+        "Unauthorized",
+        403,
+      );
+    }
+
     const {
       searchParams,
     } = new URL(
@@ -248,7 +259,15 @@ export async function GET(
     }
 
     const where: Prisma.AdmissionWhereInput =
-      {};
+      {
+        ...(adminScope.isTgnScoped
+          ? {
+              lead: {
+                is: adminScope.leadWhere,
+              },
+            }
+          : {}),
+      };
 
     if (
       isAdmissionStatus(
@@ -660,6 +679,15 @@ export async function POST(
   req: Request,
 ) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return errorResponse(
+        "Unauthorized",
+        403,
+      );
+    }
+
     let body: unknown;
 
     try {
@@ -845,12 +873,22 @@ export async function POST(
       }
     }
 
+    if (adminScope.isTgnScoped && !leadId) {
+      return errorResponse(
+        "A lead is required to create an admission.",
+        400,
+      );
+    }
+
     if (leadId) {
       const lead =
-        await prisma.lead.findUnique(
+        await prisma.lead.findFirst(
           {
             where: {
               id: leadId,
+              ...(adminScope.isTgnScoped
+                ? adminScope.leadWhere
+                : {}),
             },
             select: {
               id: true,

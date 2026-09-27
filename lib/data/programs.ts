@@ -79,7 +79,7 @@ category: "Software Engineering",
 
     duration: "9 Months",
   
-    mode: "Online & Offline",
+    mode: "Online Only",
   
     level: "Beginner to Advanced",
   
@@ -147,36 +147,22 @@ careerRoles: [
 ],
   
 tools: [
-  "Figma",
-  "Adobe Photoshop",
-  "Adobe Illustrator",
-  "Adobe XD",
-  "Canva Pro",
-  "CorelDRAW",
-  "Adobe InDesign",
-  "Adobe Lightroom",
-  "Adobe Firefly",
+  "HTML",
+  "CSS",
+  "JavaScript",
+  "React",
+  "Next.js",
+  "Node.js",
+  "Express",
+  "REST APIs",
+  "PostgreSQL",
+  "Prisma",
+  "Git",
+  "GitHub",
+  "Vercel",
   "ChatGPT",
-  "Gemini",
   "Claude",
-  "Midjourney",
-  "Framer",
-  "Spline",
-  "FigJam",
-  "Miro",
-  "Notion",
-  "Behance",
-  "Dribbble",
-  "Google Fonts",
-  "Material Design",
-  "Icons8",
-  "Flaticon",
-  "LottieFiles",
-  "Unsplash",
-  "Pexels",
-  "Coolors",
-  "Zeplin",
-  "AI Design Workflows"
+  "Gemini"
 ],
   
 projects: [
@@ -404,7 +390,7 @@ careerSupport: [
   
     duration: "9 Months",
   
-    mode: "Live Online",
+    mode: "Online Only",
   
     level: "Beginner to Advanced",
   
@@ -746,7 +732,7 @@ careerSupport: [
   
     duration: "9 Months",
   
-    mode: "Live Online",
+    mode: "Online Only",
   
     level: "Beginner to Advanced",
   
@@ -1082,7 +1068,7 @@ careerSupport: [
   
     duration: "9 Months",
   
-    mode: "Live Online",
+    mode: "Online Only",
   
     level: "Beginner to Advanced",
   

@@ -7,6 +7,7 @@ import {
 
 import { prisma } from "@/lib/prisma";
 import { getTgnContext, canManageNetwork } from "@/lib/tgn/authorization";
+import { getTgnAccessibleMemberIds } from "@/lib/tgn/hierarchy";
 import {
   createAccountSetupToken,
   getAccountSetupUrl,
@@ -116,9 +117,22 @@ function canTransition(
   return transitions[current]?.includes(target) ?? false;
 }
 
-async function getApplication(id: string) {
-  return prisma.tgnApplication.findUnique({
-    where: { id },
+async function getApplication(
+  id: string,
+  accessibleMemberIds: string[] | null,
+  isFounder: boolean,
+) {
+  return prisma.tgnApplication.findFirst({
+    where: {
+      id,
+      ...(isFounder
+        ? {}
+        : {
+            sourceMemberId: {
+              in: accessibleMemberIds ?? [],
+            },
+          }),
+    },
     include: {
       sourceMember: {
         select: {
@@ -202,8 +216,14 @@ export async function GET(
     }
 
     const { id } = await context.params;
+    const accessibleMemberIds = await getTgnAccessibleMemberIds(tgnContext);
+    const isFounder = tgnContext?.access === "FOUNDER";
 
-    const application = await getApplication(id);
+    const application = await getApplication(
+      id,
+      accessibleMemberIds,
+      isFounder,
+    );
 
     if (!application) {
       return errorResponse("TGN application not found.", 404);
@@ -240,8 +260,20 @@ export async function PATCH(
     const { id } = await context.params;
     const body = await request.json();
 
-    const application = await prisma.tgnApplication.findUnique({
-      where: { id },
+    const accessibleMemberIds = await getTgnAccessibleMemberIds(tgnContext);
+    const isFounder = tgnContext?.access === "FOUNDER";
+
+    const application = await prisma.tgnApplication.findFirst({
+      where: {
+        id,
+        ...(isFounder
+          ? {}
+          : {
+              sourceMemberId: {
+                in: accessibleMemberIds ?? [],
+              },
+            }),
+      },
       select: {
         id: true,
         applicationNo: true,

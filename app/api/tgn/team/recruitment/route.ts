@@ -89,6 +89,21 @@ export async function GET(request: Request) {
       memberId = referredMember.id;
     }
 
+    // Network Managers recruit Team Leaders.
+    // Team Leaders recruit Growth Executives.
+    // A Network Manager must never be treated as a Team Leader
+    // by this Team Leader recruitment endpoint.
+    if (context.access === "NETWORK_MANAGER") {
+      return NextResponse.json({
+        success: true,
+        recruitment: null,
+        recruitmentAvailable: false,
+        viewerAccess: context.access,
+        message:
+          "Network Managers recruit Team Leaders through the TGN application workflow.",
+      });
+    }
+
     if (!memberId) {
       return NextResponse.json(
         {
@@ -158,13 +173,7 @@ export async function GET(request: Request) {
       );
     }
 
-    if (
-      member.memberType !== TgnMemberType.TEAM_LEADER &&
-      !(
-        context.access === "FOUNDER" ||
-        context.access === "NETWORK_MANAGER"
-      )
-    ) {
+    if (member.memberType !== TgnMemberType.TEAM_LEADER) {
       return NextResponse.json(
         {
           success: false,
@@ -200,6 +209,8 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
+      recruitmentAvailable: true,
+      viewerAccess: context.access,
       recruitment: {
         memberId: member.id,
         leaderName: member.user.name ?? member.user.email,

@@ -1,5 +1,6 @@
 "use client";
 
+
 import { motion } from "framer-motion";
 import {
   ArrowRight,
@@ -16,6 +17,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import StatsGrid from "@/components/dashboard/StatsGrid";
+import UpcomingCounsellingCard from "@/components/dashboard/UpcomingCounsellingCard";
 import AnalyticsChart from "@/components/dashboard/AnalyticsChart";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import LeadTable, {
@@ -46,6 +48,13 @@ interface DashboardPeriod {
 interface DashboardChanges {
   newLeads: number;
   enrollments: number;
+}
+
+interface AdmissionOperations {
+  applicationsPending: number;
+  admissionsPending: number;
+  paymentVerification: number;
+  documentsPending: number;
 }
 
 interface GrowthPoint {
@@ -81,6 +90,10 @@ interface DashboardResponse {
   success: boolean;
   generatedAt: string;
   stats: DashboardStats;
+  admissionOperations: AdmissionOperations;
+  viewer: {
+    isNetworkManager: boolean;
+  };
   period: DashboardPeriod;
   changes: DashboardChanges;
   growth: GrowthPoint[];
@@ -126,6 +139,13 @@ const EMPTY_PERIOD: DashboardPeriod = {
 const EMPTY_CHANGES: DashboardChanges = {
   newLeads: 0,
   enrollments: 0,
+};
+
+const EMPTY_ADMISSION_OPERATIONS: AdmissionOperations = {
+  applicationsPending: 0,
+  admissionsPending: 0,
+  paymentVerification: 0,
+  documentsPending: 0,
 };
 
 const EMPTY_FOLLOW_UPS: FollowUpSummary = {
@@ -194,6 +214,7 @@ function getGreeting() {
 }
 
 export default function DashboardPage() {
+  const [displayName, setDisplayName] = useState("there");
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -217,7 +238,26 @@ export default function DashboardPage() {
       const result = (await response.json()) as DashboardResponse;
 
       if (!response.ok || !result.success) {
-        throw new Error("Unable to load dashboard data.");
+        const apiResult = result as DashboardResponse & {
+          message?: string;
+          debug?: string;
+        };
+
+        const apiMessage =
+          typeof apiResult.message === "string"
+            ? apiResult.message
+            : "Unable to load dashboard data.";
+
+        const apiDebug =
+          typeof apiResult.debug === "string"
+            ? apiResult.debug
+            : "";
+
+        throw new Error(
+          apiDebug
+            ? `${apiMessage}: ${apiDebug}`
+            : apiMessage,
+        );
       }
 
       setData(result);
@@ -237,10 +277,47 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchDashboard();
+
+    const loadSessionName = async () => {
+      try {
+        const response = await fetch("/api/auth/session", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const session = (await response.json()) as {
+          user?: {
+            name?: string | null;
+          };
+        };
+
+        const firstName =
+          session.user?.name?.trim().split(/\s+/)[0];
+
+        if (firstName) {
+          setDisplayName(firstName);
+        }
+      } catch (error) {
+        console.error("Session name fetch error:", error);
+      }
+    };
+
+    loadSessionName();
   }, [fetchDashboard]);
 
   const stats = data?.stats ?? EMPTY_STATS;
   const period = data?.period ?? EMPTY_PERIOD;
+
+  const admissionOperations =
+    data?.admissionOperations ??
+    EMPTY_ADMISSION_OPERATIONS;
+
+  const isNetworkManager =
+    data?.viewer?.isNetworkManager ?? false;
   const changes = data?.changes ?? EMPTY_CHANGES;
   const growth = data?.growth ?? [];
   const activities = data?.activities ?? [];
@@ -261,7 +338,7 @@ export default function DashboardPage() {
           </p>
 
           <h1 className="mt-1 text-2xl font-bold tracking-[-0.035em] text-slate-950 sm:text-[28px]">
-            {getGreeting()}, Manvendra
+            {getGreeting()}, {displayName}
           </h1>
 
           <p className="mt-1 text-sm text-slate-500">
@@ -316,12 +393,19 @@ export default function DashboardPage() {
 
       <StatsGrid
         stats={stats}
+        admissionOperations={admissionOperations}
+        managerMode={isNetworkManager}
         currentMonthLeads={currentMonthLeads}
         currentMonthEnrollments={currentMonthEnrollments}
         leadChange={changes.newLeads}
         enrollmentChange={changes.enrollments}
         loading={loading}
       />
+
+      <div className="mt-5">
+        <UpcomingCounsellingCard />
+      </div>
+
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.8fr)]">
         <AnalyticsChart data={growth} loading={loading} />

@@ -10,6 +10,10 @@ import {
   getTgnContext,
   canManageNetwork,
 } from "@/lib/tgn/authorization";
+import {
+  getTgnAccessibleMemberIds,
+  getTgnLeadScope,
+} from "@/lib/tgn/hierarchy";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +31,60 @@ export async function GET() {
       );
     }
 
+    const isFounder = context?.access === "FOUNDER";
+    const accessibleMemberIds = isFounder
+      ? null
+      : await getTgnAccessibleMemberIds(context);
+    const tgnLeadScope = await getTgnLeadScope(context);
+
+    if (!isFounder && (accessibleMemberIds?.length ?? 0) === 0) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          members: {
+            total: 0,
+            active: 0,
+            teamLeaders: 0,
+            executives: 0,
+          },
+          teams: {
+            total: 0,
+            active: 0,
+          },
+          applications: {
+            total: 0,
+            pending: 0,
+          },
+          leads: {
+            total: 0,
+          },
+          commissions: {
+            total: 0,
+            pending: 0,
+            approved: 0,
+            paid: 0,
+            amounts: {},
+          },
+        },
+      });
+    }
+
+    const memberScope = isFounder
+      ? {}
+      : { id: { in: accessibleMemberIds! } };
+
+    const teamScope = isFounder
+      ? {}
+      : { leaderMemberId: { in: accessibleMemberIds! } };
+
+    const applicationScope = isFounder
+      ? {}
+      : { sourceMemberId: { in: accessibleMemberIds! } };
+
+    const commissionScope = isFounder
+      ? {}
+      : { memberId: { in: accessibleMemberIds! } };
+
     const [
       totalMembers,
       activeMembers,
@@ -42,29 +100,44 @@ export async function GET() {
       approvedCommissions,
       paidCommissions,
     ] = await Promise.all([
-      prisma.tgnMemberProfile.count(),
       prisma.tgnMemberProfile.count({
-        where: { status: TgnMemberStatus.ACTIVE },
+        where: memberScope,
       }),
       prisma.tgnMemberProfile.count({
         where: {
+          ...memberScope,
+          status: TgnMemberStatus.ACTIVE,
+        },
+      }),
+      prisma.tgnMemberProfile.count({
+        where: {
+          ...memberScope,
           memberType: TgnMemberType.TEAM_LEADER,
           status: { not: TgnMemberStatus.INACTIVE },
         },
       }),
       prisma.tgnMemberProfile.count({
         where: {
+          ...memberScope,
           memberType: TgnMemberType.EXECUTIVE,
           status: { not: TgnMemberStatus.INACTIVE },
         },
       }),
-      prisma.tgnTeam.count(),
       prisma.tgnTeam.count({
-        where: { status: "ACTIVE" },
+        where: teamScope,
       }),
-      prisma.tgnApplication.count(),
+      prisma.tgnTeam.count({
+        where: {
+          ...teamScope,
+          status: "ACTIVE",
+        },
+      }),
+      prisma.tgnApplication.count({
+        where: applicationScope,
+      }),
       prisma.tgnApplication.count({
         where: {
+          ...applicationScope,
           status: {
             in: [
               TgnApplicationStatus.SUBMITTED,
@@ -76,19 +149,20 @@ export async function GET() {
         },
       }),
       prisma.lead.count({
+        where: tgnLeadScope,
+      }),
+      prisma.tgnCommission.count({
+        where: commissionScope,
+      }),
+      prisma.tgnCommission.count({
         where: {
-          OR: [
-            { tgnSourceMemberId: { not: null } },
-            { tgnOwnerId: { not: null } },
-          ],
+          ...commissionScope,
+          status: TgnCommissionStatus.PENDING,
         },
       }),
-      prisma.tgnCommission.count(),
-      prisma.tgnCommission.count({
-        where: { status: TgnCommissionStatus.PENDING },
-      }),
       prisma.tgnCommission.count({
         where: {
+          ...commissionScope,
           status: {
             in: [
               TgnCommissionStatus.ELIGIBLE,
@@ -98,12 +172,16 @@ export async function GET() {
         },
       }),
       prisma.tgnCommission.count({
-        where: { status: TgnCommissionStatus.PAID },
+        where: {
+          ...commissionScope,
+          status: TgnCommissionStatus.PAID,
+        },
       }),
     ]);
 
     const commissionTotals = await prisma.tgnCommission.groupBy({
       by: ["status"],
+      where: commissionScope,
       _sum: { amount: true },
     });
 

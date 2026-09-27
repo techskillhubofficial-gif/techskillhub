@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma, TgnCommissionStatus } from "@prisma/client";
 import { getTgnContext, canManageNetwork } from "@/lib/tgn/authorization";
+import {
+  getTgnAccessibleMemberIds,
+  getTgnLeadScope,
+} from "@/lib/tgn/hierarchy";
 import { prisma } from "@/lib/prisma";
 
 const MAX_COMMISSION = 5000;
@@ -174,7 +178,13 @@ async function evaluate(admissionId: string, memberId: string) {
 
 export async function GET(request: NextRequest) {
   try {
-    if (!(await authorized())) return fail("Unauthorized", 401);
+    const context = await authorized();
+
+    if (!context) return fail("Unauthorized", 401);
+
+    const isFounder = context.access === "FOUNDER";
+    const accessibleMemberIds = await getTgnAccessibleMemberIds(context);
+    const tgnLeadScope = await getTgnLeadScope(context);
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
@@ -185,12 +195,7 @@ export async function GET(request: NextRequest) {
       const admissions = await prisma.admission.findMany({
         where: {
           status: { in: ["APPROVED", "ENROLLED"] },
-          lead: {
-            OR: [
-              { tgnSourceMemberId: { not: null } },
-              { tgnOwnerId: { not: null } },
-            ],
-          },
+          lead: tgnLeadScope,
         },
         orderBy: { approvedAt: "desc" },
         take: 100,
@@ -211,6 +216,9 @@ export async function GET(request: NextRequest) {
       const existing = await prisma.tgnCommission.findMany({
         where: {
           admissionId: { in: admissions.map((a) => a.id) },
+          ...(isFounder
+            ? {}
+            : { memberId: { in: accessibleMemberIds } }),
         },
         select: {
           id: true,
@@ -235,7 +243,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const where: Prisma.TgnCommissionWhereInput = {};
+    const where: Prisma.TgnCommissionWhereInput = isFounder
+      ? {}
+      : { memberId: { in: accessibleMemberIds } };
 
     if (
       status &&
@@ -246,7 +256,13 @@ export async function GET(request: NextRequest) {
       where.status = status as TgnCommissionStatus;
     }
 
-    if (memberId) where.memberId = memberId;
+    if (memberId) {
+      if (!isFounder && !accessibleMemberIds.includes(memberId)) {
+        return fail("You cannot access commissions for this TGN member.", 403);
+      }
+
+      where.memberId = memberId;
+    }
 
     if (search) {
       where.OR = [
@@ -381,7 +397,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    if (!(await authorized())) return fail("Unauthorized", 401);
+    const context = await authorized();
+
+    if (!context) return fail("Unauthorized", 401);
+
+    const accessibleMemberIds = await getTgnAccessibleMemberIds(context);
+    const isFounder = context.access === "FOUNDER";
 
     const body = await request.json();
 
@@ -403,6 +424,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (!member) return fail("TGN member not found.");
+
+    if (!isFounder && !accessibleMemberIds.includes(memberId)) {
+      return fail("You cannot create a commission for this TGN member.", 403);
+    }
 
     if (["INACTIVE", "SUSPENDED"].includes(member.status))
       return fail("Inactive or suspended members cannot receive new commissions.");

@@ -1,158 +1,89 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
 import {
-  Award,
-  Briefcase,
-  Clock3,
-  FolderCode,
+  BriefcaseBusiness,
+  FolderKanban,
   GraduationCap,
   Sparkles,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 
 import { Container } from "@/components/layout/Container";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 
-const FEATURES: {
-  title: string;
-  description: string;
-  icon: LucideIcon;
-}[] = [
+const FEATURES = [
   {
-    title: "Live Industry Mentorship",
+    title: "Practical Learning",
     description:
-      "Learn directly from experienced professionals working in top technology companies through live, interactive classes focused on real-world skills.",
+      "Learn concepts through guided sessions and practical application rather than isolated theory.",
     icon: GraduationCap,
   },
   {
-    title: "Real Client Projects",
+    title: "Real-World Projects",
     description:
-      "Build production-ready applications, solve real business challenges, and create an impressive portfolio that demonstrates your practical expertise.",
-    icon: FolderCode,
+      "Turn what you learn into projects that help you demonstrate your skills and build your portfolio.",
+    icon: FolderKanban,
   },
   {
-    title: "Career Acceleration",
+    title: "Guided Career Development",
     description:
-      "Receive personalized career guidance, resume reviews, mock interviews, internship opportunities, and dedicated placement assistance to help you secure your dream job.",
-    icon: Briefcase,
+      "Get structured guidance around learning paths, portfolio development and career preparation.",
+    icon: BriefcaseBusiness,
   },
   {
-    title: "AI-Powered Learning Experience",
+    title: "AI-Enabled Learning",
     description:
-      "Accelerate your learning with our AI Mentor, personalized study recommendations, coding assistance, and intelligent career guidance available whenever you need it.",
+      "Use modern AI tools and workflows as part of the learning experience across relevant programs.",
     icon: Sparkles,
-  },
-  {
-    title: "Flexible Learning",
-    description:
-      "Attend live weekend or evening batches, revisit recorded sessions anytime, and learn at your own pace without compromising your education or career.",
-    icon: Clock3,
-  },
-  {
-    title: "Industry Certifications",
-    description:
-      "Graduate with recognized certifications, completed industry projects, and a professional portfolio that showcases your skills to recruiters and employers.",
-    icon: Award,
   },
 ];
 
-const easeOut = [0.22, 1, 0.36, 1] as const;
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: easeOut },
-  },
-};
-
-type WhyTechSkillHubProps = {
-  className?: string;
-};
-
-export function WhyTechSkillHub({ className }: WhyTechSkillHubProps) {
-  const reduceMotion = useReducedMotion() ?? false;
+export function WhyTechSkillHub() {
 
   return (
-    <section
-      aria-labelledby="why-heading"
-      className={cn(
-        "relative overflow-hidden border-b border-slate-200 bg-slate-50 py-20 md:py-28",
-        className
-      )}
-    >
-      {/* Background Glow */}
-<div className="pointer-events-none absolute inset-0">
-  <div className="absolute -left-32 top-10 h-80 w-80 rounded-full bg-blue-100/40 blur-3xl" />
-  <div className="absolute -right-20 bottom-0 h-96 w-96 rounded-full bg-sky-100/30 blur-3xl" />
-</div>
-
+    <section className="bg-white py-14 md:py-18">
       <Container>
-        <motion.div
-          initial={reduceMotion ? false : "hidden"}
-          whileInView="show"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={{
-            hidden: {},
-            show: {
-              transition: { staggerChildren: 0.08, delayChildren: 0.04 },
-            },
-          }}
-        >
-          <motion.div variants={fadeUp} className="mx-auto max-w-2xl text-center">
-            <h2
-              id="why-heading"
-              className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl"
-            >
-              Why Students & Institutes Choose TechSkill Hub
-            </h2>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg">
-            TechSkillHub combines live expert-led training, AI-powered learning, real-world projects, mentorship, internships, career guidance, and industry-recognized certifications into one comprehensive platform helping students and professionals become confident, skilled, and job-ready.TechSkill Hub combines live industry mentorship, AI-powered learning,
-real-world projects, internships, career guidance, placement support,
-and recognized certifications to help learners become truly job-ready.
-            </p>
-          </motion.div>
-
-          <motion.ul
-            variants={{
-              hidden: {},
-              show: { transition: { staggerChildren: 0.08 } },
-            }}
-            className="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:mt-16 lg:grid-cols-3 lg:gap-6"
+        <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+          <div
+            className="max-w-xl"
           >
-            {FEATURES.map((feature) => {
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600">
+              The TechSkillHub approach
+            </p>
+
+            <h2 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-slate-950 md:text-4xl">
+              Learn skills you can apply in the real world.
+            </h2>
+
+            <p className="mt-5 text-base leading-7 text-slate-600 md:text-lg">
+              TechSkillHub connects learning, practical work and career
+              development in one structured experience.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {FEATURES.map((feature, index) => {
               const Icon = feature.icon;
 
               return (
-                <motion.li
+                <div
                   key={feature.title}
-                  variants={fadeUp}
-                  whileHover={reduceMotion ? undefined : { y: -6 }}
-                  transition={{ duration: 0.25, ease: easeOut }}
-                  className="h-full"
+                  className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_8px_30px_-24px_rgba(15,23,42,0.45)] transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_18px_40px_-24px_rgba(37,99,235,0.35)]"
                 >
-<Card className="group h-full rounded-3xl border border-slate-200 bg-white py-7 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:border-blue-300 hover:shadow-2xl">                    <CardHeader className="gap-4">
-<div className="flex size-14 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-blue-700 transition-colors duration-300 group-hover:bg-blue-600 group-hover:text-white">                        <Icon className="size-5" aria-hidden="true" />
-                      </div>
-                      <CardTitle className="text-xl font-bold tracking-tight text-slate-900">{feature.title}</CardTitle>
-                      <CardDescription className="text-base leading-7 text-slate-600">
-                        {feature.description}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-                </motion.li>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                  </div>
+
+                  <h3 className="mt-5 text-lg font-bold text-slate-950">
+                    {feature.title}
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {feature.description}
+                  </p>
+                </div>
               );
             })}
-          </motion.ul>
-        </motion.div>
+          </div>
+        </div>
       </Container>
     </section>
   );

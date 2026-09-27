@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
+  CalendarClock,
   AlertCircle,
   ArrowRight,
   BadgeCheck,
@@ -104,6 +105,35 @@ type Admission = {
     email: string;
     phone: string;
   } | null;
+};
+
+type CounsellingAdministrator = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+type CounsellingSessionItem = {
+  id: string;
+  counsellorId?: string | null;
+  scheduledAt: string;
+  durationMinutes: number;
+  mode: string;
+  meetingLink?: string | null;
+  status: string;
+  notes?: string | null;
+  outcome?: string | null;
+  nextAction?: string | null;
+  counsellor?: CounsellingAdministrator | null;
+};
+
+type CounsellingForm = {
+  counsellorId: string;
+  scheduledAt: string;
+  durationMinutes: string;
+  mode: string;
+  meetingLink: string;
+  notes: string;
 };
 
 type Stats = {
@@ -1260,6 +1290,153 @@ function AdmissionDetail({
     admission.status !== "ENROLLED" &&
     admission.status !== "REJECTED";
 
+  const [counsellingOpen, setCounsellingOpen] =
+    useState(false);
+
+  const [counsellingLoading, setCounsellingLoading] =
+    useState(false);
+
+  const [counsellingSaving, setCounsellingSaving] =
+    useState(false);
+
+  const [counsellingError, setCounsellingError] =
+    useState("");
+
+  const [administrators, setAdministrators] =
+    useState<CounsellingAdministrator[]>([]);
+
+  const [counsellingSessions, setCounsellingSessions] =
+    useState<CounsellingSessionItem[]>([]);
+
+  const [counsellingForm, setCounsellingForm] =
+    useState<CounsellingForm>({
+      counsellorId: "",
+      scheduledAt: "",
+      durationMinutes: "30",
+      mode: "ONLINE",
+      meetingLink: "",
+      notes: "",
+    });
+
+  async function loadCounselling() {
+    setCounsellingLoading(true);
+    setCounsellingError("");
+
+    try {
+      const result = await apiJson(
+        `/api/admissions/${admission.id}/counselling`,
+      );
+
+      const nextAdministrators =
+        (result.administrators || []) as CounsellingAdministrator[];
+
+      setAdministrators(nextAdministrators);
+
+      setCounsellingSessions(
+        (result.sessions || []) as CounsellingSessionItem[],
+      );
+
+      setCounsellingForm((current) => ({
+        ...current,
+        counsellorId:
+          current.counsellorId ||
+          nextAdministrators[0]?.id ||
+          "",
+      }));
+    } catch (err) {
+      setCounsellingError(
+        err instanceof Error
+          ? err.message
+          : "Unable to load counselling.",
+      );
+    } finally {
+      setCounsellingLoading(false);
+    }
+  }
+
+  async function openCounsellingScheduler() {
+    setCounsellingOpen(true);
+    await loadCounselling();
+  }
+
+  async function scheduleCounselling() {
+    if (!counsellingForm.counsellorId) {
+      setCounsellingError(
+        "Please select an Administrator.",
+      );
+      return;
+    }
+
+    if (!counsellingForm.scheduledAt) {
+      setCounsellingError(
+        "Please select the counselling date and time.",
+      );
+      return;
+    }
+
+    if (
+      counsellingForm.mode === "ONLINE" &&
+      !counsellingForm.meetingLink.trim()
+    ) {
+      setCounsellingError(
+        "Please add the meeting link for an online counselling session.",
+      );
+      return;
+    }
+
+    setCounsellingSaving(true);
+    setCounsellingError("");
+
+    try {
+      const result = await apiJson(
+        `/api/admissions/${admission.id}/counselling`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            counsellorId:
+              counsellingForm.counsellorId,
+            scheduledAt: new Date(
+              counsellingForm.scheduledAt,
+            ).toISOString(),
+            durationMinutes:
+              Number(
+                counsellingForm.durationMinutes,
+              ) || 30,
+            mode: counsellingForm.mode,
+            meetingLink:
+              counsellingForm.meetingLink.trim() ||
+              null,
+            notes:
+              counsellingForm.notes.trim() ||
+              null,
+          }),
+        },
+      );
+
+      setCounsellingSessions((current) => [
+        result.session as CounsellingSessionItem,
+        ...current,
+      ]);
+
+      setCounsellingOpen(false);
+
+      setCounsellingForm((current) => ({
+        ...current,
+        scheduledAt: "",
+        meetingLink: "",
+        notes: "",
+      }));
+    } catch (err) {
+      setCounsellingError(
+        err instanceof Error
+          ? err.message
+          : "Unable to schedule counselling.",
+      );
+    } finally {
+      setCounsellingSaving(false);
+    }
+  }
+
   return (
     <Modal
       title={admission.studentName}
@@ -1704,6 +1881,89 @@ function AdmissionDetail({
           </div>
         </section>
 
+        <section className="rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                Counselling
+              </p>
+
+              <h3 className="mt-1 text-sm font-bold text-slate-900">
+                Administrator counselling
+              </h3>
+
+              <p className="mt-1 text-xs text-slate-500">
+                Schedule the next counselling session and assign it directly to a TechSkillHub Administrator.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void openCounsellingScheduler()}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white transition hover:bg-blue-700"
+            >
+              <CalendarClock className="h-3.5 w-3.5" />
+              Schedule counselling
+            </button>
+          </div>
+
+          {counsellingSessions.length > 0 ? (
+            <div className="mt-4 space-y-3">
+              {counsellingSessions.map((session) => (
+                <div
+                  key={session.id}
+                  className="rounded-xl border border-slate-200 bg-slate-50/70 p-4"
+                >
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">
+                        {session.counsellor?.name || "Administrator"}
+                      </p>
+
+                      <p className="mt-1 text-[11px] text-slate-500">
+                        {dateTime(session.scheduledAt)} ·{" "}
+                        {session.durationMinutes} min ·{" "}
+                        {readable(session.mode)}
+                      </p>
+                    </div>
+
+                    <span className="inline-flex w-fit rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700">
+                      {readable(session.status)}
+                    </span>
+                  </div>
+
+                  {session.meetingLink ? (
+                    <a
+                      href={session.meetingLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-3 inline-flex text-[11px] font-semibold text-blue-600 hover:text-blue-700"
+                    >
+                      Open meeting link
+                    </a>
+                  ) : null}
+
+                  {session.notes ? (
+                    <p className="mt-2 text-[11px] leading-5 text-slate-500">
+                      {session.notes}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
+              No counselling session has been scheduled yet.
+            </div>
+          )}
+
+          {counsellingError ? (
+            <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-medium text-red-700">
+              {counsellingError}
+            </div>
+          ) : null}
+        </section>
+
         <WorkflowPanel
           admission={admission}
           documentsComplete={
@@ -1734,6 +1994,238 @@ function AdmissionDetail({
           }
           onRefresh={onRefresh}
         />
+
+      </div>
+
+      <CounsellingSchedulerModal
+        admission={admission}
+        open={counsellingOpen}
+        onClose={() =>
+          setCounsellingOpen(false)
+        }
+        administrators={administrators}
+        form={counsellingForm}
+        setForm={setCounsellingForm}
+        loading={counsellingLoading}
+        saving={counsellingSaving}
+        error={counsellingError}
+        onSubmit={scheduleCounselling}
+      />
+    </Modal>
+  );
+}
+
+function CounsellingSchedulerModal({
+  admission,
+  open,
+  onClose,
+  administrators,
+  form,
+  setForm,
+  loading,
+  saving,
+  error,
+  onSubmit,
+}: {
+  admission: Admission;
+  open: boolean;
+  onClose: () => void;
+  administrators: CounsellingAdministrator[];
+  form: CounsellingForm;
+  setForm: (
+    value:
+      | CounsellingForm
+      | ((current: CounsellingForm) => CounsellingForm),
+  ) => void;
+  loading: boolean;
+  saving: boolean;
+  error: string;
+  onSubmit: () => Promise<void>;
+}) {
+  if (!open) return null;
+
+  return (
+    <Modal
+      title="Schedule counselling"
+      subtitle={admission.studentName}
+      onClose={onClose}
+    >
+      <div className="space-y-5 p-5 sm:p-6">
+        {error ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs font-medium text-red-700">
+            {error}
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading Administrators...
+          </div>
+        ) : (
+          <>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                Administrator
+              </label>
+
+              <select
+                value={form.counsellorId}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    counsellorId: event.target.value,
+                  }))
+                }
+                className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="">
+                  Select Administrator
+                </option>
+
+                {administrators.map((administrator) => (
+                  <option
+                    key={administrator.id}
+                    value={administrator.id}
+                  >
+                    {administrator.name} · {administrator.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                  Date & time
+                </label>
+
+                <input
+                  type="datetime-local"
+                  value={form.scheduledAt}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      scheduledAt: event.target.value,
+                    }))
+                  }
+                  className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                  Duration
+                </label>
+
+                <select
+                  value={form.durationMinutes}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      durationMinutes: event.target.value,
+                    }))
+                  }
+                  className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="30">30 minutes</option>
+                  <option value="45">45 minutes</option>
+                  <option value="60">60 minutes</option>
+                  <option value="90">90 minutes</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                Mode
+              </label>
+
+              <select
+                value={form.mode}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    mode: event.target.value,
+                  }))
+                }
+                className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              >
+                <option value="ONLINE">Online</option>
+                <option value="IN_PERSON">In-person</option>
+              </select>
+            </div>
+
+            {form.mode === "ONLINE" ? (
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                  Meeting link
+                </label>
+
+                <input
+                  type="url"
+                  value={form.meetingLink}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      meetingLink: event.target.value,
+                    }))
+                  }
+                  placeholder="https://meet.google.com/..."
+                  className="mt-2 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                />
+              </div>
+            ) : null}
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                Notes
+              </label>
+
+              <textarea
+                value={form.notes}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    notes: event.target.value,
+                  }))
+                }
+                rows={4}
+                placeholder="Add counselling instructions, preparation notes or context..."
+                className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={saving}
+                className="h-10 rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void onSubmit()}
+                disabled={
+                  saving ||
+                  loading ||
+                  administrators.length === 0
+                }
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {saving ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <CalendarClock className="h-3.5 w-3.5" />
+                )}
+                Schedule counselling
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </Modal>
   );

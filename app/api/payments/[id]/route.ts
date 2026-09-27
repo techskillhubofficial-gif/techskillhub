@@ -10,6 +10,8 @@ import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getAdminTgnScope } from "@/lib/tgn/admin-scope";
+
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -121,6 +123,15 @@ function getPendingAmount(
 
 export async function GET(req: Request) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return errorResponse(
+        "Unauthorized",
+        403,
+      );
+    }
+
     const { searchParams } = new URL(req.url);
 
     const search = cleanString(
@@ -208,7 +219,18 @@ export async function GET(req: Request) {
       aggregateStats,
     ] = await Promise.all([
       prisma.payment.findMany({
-        where,
+        where: {
+          ...where,
+          ...(adminScope.isTgnScoped
+            ? {
+                admission: {
+                  lead: {
+                    is: adminScope.leadWhere,
+                  },
+                },
+              }
+            : {}),
+        },
         orderBy: [
           { paymentDate: "desc" },
           { createdAt: "desc" },
@@ -380,6 +402,15 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return errorResponse(
+        "Unauthorized",
+        403,
+      );
+    }
+
     let body: unknown;
 
     try {
@@ -484,9 +515,16 @@ export async function POST(req: Request) {
     }
 
     const admission =
-      await prisma.admission.findUnique({
+      await prisma.admission.findFirst({
         where: {
           id: admissionId,
+          ...(adminScope.isTgnScoped
+            ? {
+                lead: {
+                  is: adminScope.leadWhere,
+                },
+              }
+            : {}),
         },
         select: {
           id: true,
@@ -726,6 +764,15 @@ export async function PATCH(
   },
 ) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return errorResponse(
+        "Unauthorized",
+        403,
+      );
+    }
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
@@ -827,9 +874,18 @@ export async function PATCH(
      * no longer PENDING.
      */
 
-    const payment = await prisma.payment.findUnique({
+    const payment = await prisma.payment.findFirst({
       where: {
         id: paymentId,
+        ...(adminScope.isTgnScoped
+          ? {
+              admission: {
+                lead: {
+                  is: adminScope.leadWhere,
+                },
+              },
+            }
+          : {}),
       },
       include: {
         admission: {

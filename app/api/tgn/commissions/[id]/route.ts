@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getTgnContext, canManageNetwork } from "@/lib/tgn/authorization";
+import { getTgnAccessibleMemberIds } from "@/lib/tgn/hierarchy";
 import { prisma } from "@/lib/prisma";
 
 
@@ -12,9 +13,22 @@ async function authorized() {
   return context && canManageNetwork(context) ? context : null;
 }
 
-async function evaluate(id: string) {
-  const commission = await prisma.tgnCommission.findUnique({
-    where: { id },
+async function evaluate(
+  id: string,
+  accessibleMemberIds: string[] | null,
+  isFounder: boolean,
+) {
+  const commission = await prisma.tgnCommission.findFirst({
+    where: {
+      id,
+      ...(isFounder
+        ? {}
+        : {
+            memberId: {
+              in: accessibleMemberIds ?? [],
+            },
+          }),
+    },
     select: {
       id: true,
       memberId: true,
@@ -135,12 +149,24 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    if (!(await authorized())) return fail("Unauthorized", 401);
+    const context = await authorized();
+    if (!context) return fail("Unauthorized", 401);
 
     const { id } = await params;
+    const accessibleMemberIds = await getTgnAccessibleMemberIds(context);
+    const isFounder = context.access === "FOUNDER";
 
-    const commission = await prisma.tgnCommission.findUnique({
-      where: { id },
+    const commission = await prisma.tgnCommission.findFirst({
+      where: {
+        id,
+        ...(isFounder
+          ? {}
+          : {
+              memberId: {
+                in: accessibleMemberIds ?? [],
+              },
+            }),
+      },
       include: {
         member: {
           select: {
@@ -163,7 +189,7 @@ export async function GET(
         ...commission,
         amount: Number(commission.amount),
       },
-      evaluation: await evaluate(id),
+      evaluation: await evaluate(id, accessibleMemberIds, isFounder),
     });
   } catch (error) {
     console.error("TGN commission GET:", error);
@@ -183,14 +209,26 @@ export async function PATCH(
     const body = await request.json();
     const action = String(body.action ?? "").toUpperCase();
 
-    const commission = await prisma.tgnCommission.findUnique({
-      where: { id },
+    const accessibleMemberIds = await getTgnAccessibleMemberIds(context);
+    const isFounder = context.access === "FOUNDER";
+
+    const commission = await prisma.tgnCommission.findFirst({
+      where: {
+        id,
+        ...(isFounder
+          ? {}
+          : {
+              memberId: {
+                in: accessibleMemberIds ?? [],
+              },
+            }),
+      },
     });
 
     if (!commission) return fail("Commission not found.", 404);
 
     if (action === "CHECK_ELIGIBILITY") {
-      const result = await evaluate(id);
+      const result = await evaluate(id, accessibleMemberIds, isFounder);
 
       if (!result) return fail("Unable to evaluate commission.");
 

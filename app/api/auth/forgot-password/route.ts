@@ -67,7 +67,7 @@ async function sendResetEmail(
   const safeFirstName = escapeHtml(firstName);
   const safeResetUrl = escapeHtml(resetUrl);
 
-  await transporter.sendMail({
+  const info = await transporter.sendMail({
     from,
     to: email,
     replyTo,
@@ -131,6 +131,11 @@ Learn. Build. Earn.`,
         </div>
       </div>
     `,
+  });
+  console.info("Password reset email accepted by SMTP", {
+    messageId: info.messageId,
+    accepted: info.accepted,
+    rejected: info.rejected,
   });
 }
 

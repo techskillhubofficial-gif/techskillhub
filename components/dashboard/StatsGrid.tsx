@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import {
   CheckCircle2,
+  ClipboardList,
+  CreditCard,
   PhoneCall,
   Target,
   UserPlus,
@@ -18,8 +20,17 @@ interface DashboardStats {
   closed: number;
 }
 
+interface AdmissionOperations {
+  applicationsPending: number;
+  admissionsPending: number;
+  paymentVerification: number;
+  documentsPending: number;
+}
+
 interface StatsGridProps {
   stats: DashboardStats;
+  admissionOperations: AdmissionOperations;
+  managerMode: boolean;
   currentMonthLeads: number;
   currentMonthEnrollments: number;
   leadChange: number;
@@ -41,7 +52,7 @@ function formatChange(value: number) {
   return `${rounded}%`;
 }
 
-const cards = [
+const founderCards = [
   {
     key: "total",
     label: "Total leads",
@@ -68,22 +79,57 @@ const cards = [
   },
 ] as const;
 
+const managerCards = [
+  {
+    key: "total",
+    label: "TGN leads",
+    icon: Users,
+    description: "Network-originated CRM records",
+  },
+  {
+    key: "qualified",
+    label: "Qualified leads",
+    icon: Target,
+    description: "Ready for counselling",
+  },
+  {
+    key: "applicationsPending",
+    label: "Applications pending",
+    icon: ClipboardList,
+    description: "Submitted or under review",
+  },
+  {
+    key: "paymentVerification",
+    label: "Payment verification",
+    icon: CreditCard,
+    description: "Admissions awaiting payment review",
+  },
+] as const;
+
 export default function StatsGrid({
   stats,
+  admissionOperations,
+  managerMode,
   currentMonthLeads,
   currentMonthEnrollments,
   leadChange,
   enrollmentChange,
   loading = false,
 }: StatsGridProps) {
-  const values: Record<
-    (typeof cards)[number]["key"],
-    number
-  > = {
+  const cards = managerMode
+    ? managerCards
+    : founderCards;
+
+  const values: Record<string, number> = {
     total: stats.total,
     new: stats.new,
     contacted: stats.contacted,
+    qualified: stats.qualified,
     enrolled: stats.enrolled,
+    applicationsPending:
+      admissionOperations.applicationsPending,
+    paymentVerification:
+      admissionOperations.paymentVerification,
   };
 
   return (

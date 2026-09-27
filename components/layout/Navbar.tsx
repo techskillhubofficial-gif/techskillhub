@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Menu } from "lucide-react";
+import { ArrowRight, Menu } from "lucide-react";
 
 import { Container } from "@/components/layout/Container";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,6 @@ import {
   SheetClose,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -23,9 +22,9 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { href: "/", label: "Home" },
   { href: "/programs", label: "Programs" },
-  { href: "/corporate-training", label: "Corporate Training" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
+  { href: "/login", label: "Login" },
 ] as const;
 
 function isActivePath(pathname: string, href: string) {
@@ -47,27 +46,20 @@ function Logo({
     <Link
       href="/"
       onClick={onNavigate}
+      aria-label="TechSkillHub home"
       className={cn(
-        "flex items-center gap-2.5 rounded-md outline-none transition-opacity duration-200 hover:opacity-80 focus-visible:ring-3 focus-visible:ring-ring/50",
+        "flex items-center rounded-md outline-none transition-opacity duration-200 hover:opacity-90 focus-visible:ring-2 focus-visible:ring-blue-600/30",
         className,
       )}
     >
       <Image
-  src="/logo/Full-logo.png"
-  alt="TechSkill Hub"
-  width={400}
-  height={105}
-  priority
-  className="
-        h-[60px]
-        w-auto
-        object-contain
-        transition-transform
-        duration-300
-        hover:scale-[1.02]
-        lg:h-[72px]
-    "
-/>
+        src="/logo/Full-logo.png"
+        alt="TechSkillHub"
+        width={400}
+        height={105}
+        priority
+        className="h-[56px] w-auto object-contain sm:h-[60px] lg:h-[66px]"
+      />
     </Link>
   );
 }
@@ -76,12 +68,10 @@ function NavLink({
   href,
   label,
   pathname,
-  className,
 }: {
   href: string;
   label: string;
   pathname: string;
-  className?: string;
 }) {
   const active = isActivePath(pathname, href);
 
@@ -90,18 +80,49 @@ function NavLink({
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "relative inline-flex items-center py-1 text-sm font-medium tracking-tight outline-none transition-colors duration-200",
-        "text-muted-foreground hover:text-foreground",
-        "after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:scale-x-0 after:bg-foreground after:transition-transform after:duration-300 after:ease-out",
-        "hover:after:scale-x-100 focus-visible:text-foreground focus-visible:after:scale-x-100",
-        "focus-visible:ring-3 focus-visible:ring-ring/50",
-        active &&
-"text-blue-600 after:bg-blue-600 after:scale-x-100",
-        className,
+        "relative inline-flex h-10 items-center px-1 text-[15px] font-medium tracking-[-0.01em] outline-none transition-colors duration-200",
+        active
+          ? "text-blue-600"
+          : "text-slate-600 hover:text-slate-950",
+        "after:absolute after:bottom-0 after:left-1 after:right-1 after:h-0.5 after:origin-center after:rounded-full after:bg-blue-600 after:transition-transform after:duration-200",
+        active
+          ? "after:scale-x-100"
+          : "after:scale-x-0 hover:after:scale-x-100",
+        "focus-visible:ring-2 focus-visible:ring-blue-600/30",
       )}
     >
       {label}
     </Link>
+  );
+}
+
+function CareerGuidanceButton({
+  mobile = false,
+  onNavigate,
+}: {
+  mobile?: boolean;
+  onNavigate?: () => void;
+}) {
+  return (
+    <Button
+      size="lg"
+      className={cn(
+        "group rounded-xl bg-blue-600 font-semibold text-white shadow-[0_8px_24px_-10px_rgba(37,99,235,0.65)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-[0_12px_30px_-10px_rgba(37,99,235,0.7)]",
+        mobile
+          ? "h-12 w-full px-5 text-[15px]"
+          : "h-11 px-5 text-[15px]",
+      )}
+      nativeButton={false}
+      render={
+        <Link href="/consultation" onClick={onNavigate} />
+      }
+    >
+      Get Career Guidance
+      <ArrowRight
+        aria-hidden="true"
+        className="ml-1.5 h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
+      />
+    </Button>
   );
 }
 
@@ -110,39 +131,13 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header
-className="
-sticky
-top-0
-z-50
-border-b
-border-slate-200/70
-bg-white/80
-backdrop-blur-md
-supports-[backdrop-filter]:bg-white/70
-transition-all
-duration-300
-"
->
-<Container
-  className="
-    flex
-    h-[80px]
-    items-center
-    justify-between
-  "
->
-    <Logo />
+    <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl supports-[backdrop-filter]:bg-white/75">
+      <Container className="flex h-[76px] items-center justify-between">
+        <Logo />
 
         <nav
           aria-label="Primary"
-          className="
-hidden
-items-center
-gap-9
-xl:gap-10
-lg:flex
-"
+          className="hidden items-center gap-8 lg:flex xl:gap-9"
         >
           {NAV_ITEMS.map((item) => (
             <NavLink
@@ -154,56 +149,8 @@ lg:flex
           ))}
         </nav>
 
-        <div
-className="
-hidden
-items-center
-gap-3
-xl:gap-4
-lg:flex
-"
->
-        
-        <Button
-  variant="outline"
-  size="lg"
-  className="h-10 px-5"
-  nativeButton={false}
-  render={
-    <Link
-      href="/career-guidance"
-      onClick={() => setOpen(false)}
-    />
-  }
->
-  Free Career Guidance
-</Button>
-
-<Button
-size="lg"
-className="
-h-10
-rounded-xl
-bg-blue-600
-px-6
-font-semibold
-text-white
-shadow-md
-transition-all
-duration-300
-hover:-translate-y-0.5
-hover:bg-blue-700
-hover:shadow-lg
-"
-nativeButton={false}
-render={
-<Link
-href="/consultation"
-/>
-}
->
-Book Consultation
-</Button>
+        <div className="hidden items-center lg:flex">
+          <CareerGuidanceButton />
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -212,27 +159,34 @@ Book Consultation
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden"
-                aria-label="Open menu"
+                className="h-10 w-10 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-slate-950 lg:hidden"
+                aria-label="Open navigation menu"
               />
             }
           >
-            <Menu aria-hidden="true" />
+            <Menu aria-hidden="true" className="h-5 w-5" />
           </SheetTrigger>
-          <SheetContent side="right" className="
-w-full
-max-w-[380px]
-gap-0
-">
-            <SheetHeader className="border-b border-border">
-              <SheetTitle className="sr-only">Navigation</SheetTitle>
+
+          <SheetContent
+            side="right"
+            className="w-full max-w-[390px] gap-0 border-l border-slate-200 bg-white p-0"
+          >
+            <SheetHeader className="border-b border-slate-200 px-6 py-5">
+              <SheetTitle className="sr-only">
+                TechSkillHub navigation
+              </SheetTitle>
               <SheetDescription className="sr-only">
-                Site sections and account actions
+                Explore TechSkillHub programs, information, contact and account
+                access.
               </SheetDescription>
+
               <Logo onNavigate={() => setOpen(false)} />
             </SheetHeader>
 
-            <nav aria-label="Mobile" className="flex flex-col gap-1 px-6 py-6">
+            <nav
+              aria-label="Mobile"
+              className="flex flex-col px-5 py-6"
+            >
               {NAV_ITEMS.map((item) => {
                 const active = isActivePath(pathname, item.href);
 
@@ -242,10 +196,11 @@ gap-0
                     nativeButton={false}
                     render={<Link href={item.href} />}
                     className={cn(
-                      "rounded-lg px-3 py-2.5 text-sm font-medium tracking-tight outline-none transition-colors duration-200",
-                      "text-muted-foreground hover:bg-muted hover:text-foreground",
-                      "focus-visible:ring-3 focus-visible:ring-ring/50",
-                      active && "bg-muted text-foreground",
+                      "flex min-h-12 items-center rounded-xl px-4 text-[15px] font-medium outline-none transition-colors duration-200",
+                      active
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-slate-700 hover:bg-slate-50 hover:text-slate-950",
+                      "focus-visible:ring-2 focus-visible:ring-blue-600/30",
                     )}
                     aria-current={active ? "page" : undefined}
                   >
@@ -255,32 +210,18 @@ gap-0
               })}
             </nav>
 
-            <SheetFooter className="border-t border-border">
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-10 w-full transition-colors duration-200"
-                nativeButton={false}
-                render={
-                  <Link href="/student-portal" onClick={() => setOpen(false)} />
-                }
-              >
-                Student Portal
-              </Button>
-              <Button
-  size="lg"
-  className="h-11 rounded-xl bg-blue-600 px-6 font-semibold hover:bg-blue-700"
-  nativeButton={false}
-  render={
-    <Link
-      href="/contact"
-      onClick={() => setOpen(false)}
-    />
-  }
->
-  Apply Now
-</Button>
-            </SheetFooter>
+            <div className="mt-auto border-t border-slate-200 px-5 py-6">
+              <CareerGuidanceButton
+                mobile
+                onNavigate={() => setOpen(false)}
+              />
+
+              <p className="mt-3 text-center text-xs leading-5 text-slate-500">
+                Not sure which path is right for you?
+                <br />
+                Start with a career conversation.
+              </p>
+            </div>
           </SheetContent>
         </Sheet>
       </Container>

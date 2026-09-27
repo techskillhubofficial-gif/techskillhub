@@ -4,6 +4,10 @@ import {
   canManageNetwork,
   getTgnContext,
 } from "@/lib/tgn/authorization";
+import {
+  getTgnAccessibleMemberIds,
+  getTgnLeadScope,
+} from "@/lib/tgn/hierarchy";
 import { prisma } from "@/lib/prisma";
 
 
@@ -18,6 +22,28 @@ export async function GET() {
       );
     }
 
+    const isFounder = context?.access === "FOUNDER";
+    const accessibleMemberIds = isFounder
+      ? null
+      : await getTgnAccessibleMemberIds(context);
+    const tgnLeadScope = await getTgnLeadScope(context);
+
+    const memberScope = isFounder
+      ? {}
+      : { id: { in: accessibleMemberIds! } };
+
+    const teamScope = isFounder
+      ? {}
+      : { leaderMemberId: { in: accessibleMemberIds! } };
+
+    const applicationScope = isFounder
+      ? {}
+      : { sourceMemberId: { in: accessibleMemberIds! } };
+
+    const commissionScope = isFounder
+      ? {}
+      : { memberId: { in: accessibleMemberIds! } };
+
     const [
       members,
       teams,
@@ -27,6 +53,7 @@ export async function GET() {
       commissions,
     ] = await Promise.all([
       prisma.tgnMemberProfile.findMany({
+        where: memberScope,
         select: {
           id: true,
           memberType: true,
@@ -51,11 +78,13 @@ export async function GET() {
 
       prisma.tgnTeam.count({
         where: {
+          ...teamScope,
           status: { not: "ARCHIVED" },
         },
       }),
 
       prisma.tgnApplication.findMany({
+        where: applicationScope,
         select: {
           id: true,
           memberType: true,
@@ -66,12 +95,7 @@ export async function GET() {
       }),
 
       prisma.lead.findMany({
-        where: {
-          OR: [
-            { tgnSourceMemberId: { not: null } },
-            { tgnOwnerId: { not: null } },
-          ],
-        },
+        where: tgnLeadScope,
         select: {
           id: true,
           fullName: true,
@@ -109,12 +133,7 @@ export async function GET() {
 
       prisma.admission.findMany({
         where: {
-          lead: {
-            OR: [
-              { tgnSourceMemberId: { not: null } },
-              { tgnOwnerId: { not: null } },
-            ],
-          },
+          lead: tgnLeadScope,
         },
         select: {
           id: true,
@@ -146,6 +165,7 @@ export async function GET() {
       }),
 
       prisma.tgnCommission.findMany({
+        where: commissionScope,
         select: {
           id: true,
           memberId: true,

@@ -10,6 +10,8 @@ import {
 
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getAdminTgnScope } from "@/lib/tgn/admin-scope";
+
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -100,11 +102,29 @@ export async function GET(
       );
     }
 
+    const adminScope =
+      await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return errorResponse(
+        "Forbidden. Admin access required.",
+        403,
+      );
+    }
+
     const payment =
-      await prisma.registrationPayment.findUnique(
+      await prisma.registrationPayment.findFirst(
         {
           where: {
             id: id.trim(),
+
+            ...(adminScope.isTgnScoped
+              ? {
+                  lead: {
+                    is: adminScope.leadWhere,
+                  },
+                }
+              : {}),
           },
 
           include: {
@@ -249,11 +269,29 @@ export async function PATCH(
       );
     }
 
+    const adminScope =
+      await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return errorResponse(
+        "Forbidden. Admin access required.",
+        403,
+      );
+    }
+
     const payment =
-      await prisma.registrationPayment.findUnique(
+      await prisma.registrationPayment.findFirst(
         {
           where: {
             id: id.trim(),
+
+            ...(adminScope.isTgnScoped
+              ? {
+                  lead: {
+                    is: adminScope.leadWhere,
+                  },
+                }
+              : {}),
           },
 
           include: {

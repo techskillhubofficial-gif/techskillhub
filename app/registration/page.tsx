@@ -1,7 +1,17 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 import {
   ArrowRight,
   Banknote,
@@ -102,7 +112,7 @@ function Field({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         required={required}
-        className="h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+        className="h-[52px] w-full rounded-[14px] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/8"
       />
     </label>
   );
@@ -134,9 +144,9 @@ function PaymentDetail({
   if (!value) return null;
 
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-slate-100 py-3 last:border-b-0">
+    <div className="flex items-center justify-between gap-4 border-b border-slate-200/70 py-3 last:border-b-0">
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400">
           {label}
         </p>
         <p className="mt-1 break-all text-sm font-semibold text-slate-800">
@@ -148,7 +158,7 @@ function PaymentDetail({
         <button
           type="button"
           onClick={copyValue}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
         >
           {copied ? (
             <>
@@ -167,7 +177,12 @@ function PaymentDetail({
   );
 }
 
-export default function RegistrationPage() {
+function RegistrationPageContent() {
+  const searchParams = useSearchParams();
+
+  const requestedProgram =
+    searchParams.get("program")?.trim().toLowerCase() || "";
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [courseError, setCourseError] = useState("");
@@ -234,6 +249,22 @@ export default function RegistrationPage() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!requestedProgram || courses.length === 0) {
+      return;
+    }
+
+    const matchingCourse = courses.find(
+      (course) =>
+        course.slug.toLowerCase() === requestedProgram ||
+        course.title.toLowerCase() === requestedProgram,
+    );
+
+    if (matchingCourse) {
+      setCourseId(matchingCourse.id);
+    }
+  }, [requestedProgram, courses]);
 
   function handleProofChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
@@ -375,10 +406,10 @@ export default function RegistrationPage() {
 
   if (success) {
     return (
-      <main className="min-h-screen bg-slate-50">
+      <main className="min-h-screen bg-[#f8fafc] text-slate-950">
         <div className="mx-auto flex min-h-screen max-w-4xl items-center px-5 py-12 sm:px-8">
           <div className="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
-            <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 px-6 py-10 text-white sm:px-10">
+            <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 px-6 py-10 text-slate-950 sm:px-10">
               <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20">
                 <CheckCircle2 className="h-7 w-7" />
               </div>
@@ -425,7 +456,7 @@ export default function RegistrationPage() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200 p-4">
+                <div className="rounded-[20px] border border-slate-200/80 p-4">
                   <p className="text-xs font-semibold text-slate-400">
                     Program
                   </p>
@@ -434,7 +465,7 @@ export default function RegistrationPage() {
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 p-4">
+                <div className="rounded-[20px] border border-slate-200/80 p-4">
                   <p className="text-xs font-semibold text-slate-400">
                     Amount
                   </p>
@@ -443,7 +474,7 @@ export default function RegistrationPage() {
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 p-4">
+                <div className="rounded-[20px] border border-slate-200/80 p-4">
                   <p className="text-xs font-semibold text-slate-400">
                     Status
                   </p>
@@ -453,7 +484,7 @@ export default function RegistrationPage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <div className="rounded-[20px] border border-slate-200/80 bg-slate-50 p-5">
                 <div className="flex gap-3">
                   <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
                   <div>
@@ -474,7 +505,7 @@ export default function RegistrationPage() {
                   href={`/apply?registrationNo=${encodeURIComponent(
                     success.registrationNo
                   )}&email=${encodeURIComponent(studentEmail.trim().toLowerCase())}`}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-blue-700"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] bg-blue-600 px-5 py-3.5 text-sm font-bold text-white transition hover:bg-blue-700"
                 >
                   Continue to application
                   <ArrowRight className="h-4 w-4" />
@@ -500,57 +531,77 @@ export default function RegistrationPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4 sm:px-8">
-          <Link href="/" className="flex items-center gap-3">
-            <img
-              src="/logo/Full-logo.png"
-              alt="TechSkillHub"
-              className="h-9 w-auto object-contain"
-            />
-          </Link>
-
-          <div className="flex items-center gap-3">
-            <div className="hidden items-center gap-2 text-xs font-semibold text-slate-500 sm:flex">
-              <LockKeyhole className="h-4 w-4 text-emerald-500" />
-              Secure registration
-            </div>
-
-            <Link
-              href="/"
-              className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
-            >
-              Back to website
-            </Link>
-          </div>
-        </div>
-      </header>
+    <>
+      <main className="min-h-screen bg-white">
+      <Navbar />
 
       <div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:py-12">
-        <div className="mb-8 max-w-3xl">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
-            <ClipboardCheck className="h-3.5 w-3.5" />
-            Step 1 · Registration
+        <div className="mb-10">
+          <div className="mb-7 flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-blue-600 shadow-sm">
+              <ClipboardCheck className="h-3.5 w-3.5" />
+              Registration
+            </span>
+
+            <span className="text-xs font-medium text-slate-400">
+              Secure onboarding for your TechSkillHub journey
+            </span>
           </div>
 
-          <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
-            Reserve your place at TechSkillHub
-          </h1>
+          <div className="max-w-4xl">
+            <h1 className="text-4xl font-bold tracking-[-0.04em] text-slate-950 sm:text-5xl lg:text-[54px] lg:leading-[1.08]">
+              Start building your future with TechSkillHub.
+            </h1>
 
-          <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">
-            Select your program and submit the ₹5,000 registration payment
-            details. Your seat/application reservation becomes active after our
-            team verifies the payment.
-          </p>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+              Choose your program, complete your registration payment and
+              submit your details. Once your payment is verified, you can
+              continue directly to your admission application.
+            </p>
+          </div>
+
+          <div className="mt-8 flex max-w-4xl items-center">
+            {[
+              ["01", "Choose program"],
+              ["02", "Verify payment"],
+              ["03", "Complete application"],
+            ].map(([number, label], index) => (
+              <div key={number} className="flex min-w-0 flex-1 items-center">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                      index === 0
+                        ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
+                        : "border border-slate-200 bg-white text-slate-400"
+                    }`}
+                  >
+                    {number}
+                  </span>
+
+                  <span
+                    className={`hidden text-xs font-bold sm:block ${
+                      index === 0 ? "text-slate-900" : "text-slate-400"
+                    }`}
+                  >
+                    {label}
+                  </span>
+                </div>
+
+                {index < 2 && (
+                  <div className="mx-3 h-px flex-1 bg-slate-200 sm:mx-5" />
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+
           <form
             onSubmit={submitRegistration}
-            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8"
+            className="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_20px_70px_-45px_rgba(15,23,42,0.22)]"
           >
-            <div className="space-y-8">
+            <div>
               <section>
                 <div className="mb-5 flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
@@ -567,7 +618,7 @@ export default function RegistrationPage() {
                 </div>
 
                 {loadingCourses ? (
-                  <div className="flex items-center gap-3 rounded-2xl border border-slate-200 p-5 text-sm text-slate-500">
+                  <div className="flex items-center gap-3 rounded-[20px] border border-slate-200/80 p-5 text-sm text-slate-500">
                     <Loader2 className="h-5 w-5 animate-spin" />
                     Loading available programs...
                   </div>
@@ -580,7 +631,7 @@ export default function RegistrationPage() {
                     <select
                       value={courseId}
                       onChange={(event) => setCourseId(event.target.value)}
-                      className="h-14 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-12 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                      className="h-14 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-12 text-sm font-semibold text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/8"
                       required
                     >
                       <option value="">Select a program</option>
@@ -596,32 +647,47 @@ export default function RegistrationPage() {
                 )}
 
                 {selectedCourse && (
-                  <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
-                    <p className="font-bold text-blue-950">
-                      {selectedCourse.title}
-                    </p>
-                    {selectedCourse.description && (
-                      <p className="mt-1 text-sm leading-5 text-blue-900/70">
-                        {selectedCourse.description}
-                      </p>
-                    )}
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {selectedCourse.level && (
-                        <span className="rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                          {selectedCourse.level}
-                        </span>
+                  <div className="mt-5 overflow-hidden rounded-[24px] border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-indigo-50/70 shadow-[0_18px_50px_-38px_rgba(37,99,235,0.55)]">
+                    <div className="p-5 sm:p-6">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-blue-600">
+                            Selected program
+                          </p>
+
+                          <p className="text-lg font-bold tracking-tight text-slate-950">
+                            {selectedCourse.title}
+                          </p>
+                        </div>
+
+                        <div className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20 sm:flex">
+                          <CheckCircle2 className="h-5 w-5" />
+                        </div>
+                      </div>
+
+                      {selectedCourse.description && (
+                        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+                          {selectedCourse.description}
+                        </p>
                       )}
-                      {selectedCourse.duration && (
-                        <span className="rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                          {selectedCourse.duration}
+
+                      <div className="mt-5 flex flex-wrap gap-2">
+                        {selectedCourse.duration && (
+                          <span className="rounded-full border border-blue-100 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700">
+                            {selectedCourse.duration}
+                          </span>
+                        )}
+
+                        <span className="rounded-full border border-blue-100 bg-white px-3 py-1.5 text-xs font-semibold text-blue-700">
+                          Online program
                         </span>
-                      )}
+                      </div>
                     </div>
                   </div>
                 )}
               </section>
 
-              <section className="border-t border-slate-100 pt-8">
+              <section className="border-t border-slate-100 px-6 py-8 sm:px-8 sm:py-10">
                 <div className="mb-5 flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                     <ShieldCheck className="h-5 w-5" />
@@ -662,7 +728,7 @@ export default function RegistrationPage() {
                 </div>
               </section>
 
-              <section className="border-t border-slate-100 pt-8">
+              <section className="border-t border-slate-100 px-6 py-8 sm:px-8 sm:py-10">
                 <div className="mb-5 flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                     <ReceiptIndianRupee className="h-5 w-5" />
@@ -672,24 +738,40 @@ export default function RegistrationPage() {
                       Registration payment
                     </h2>
                     <p className="mt-1 text-sm text-slate-500">
-                      The registration fee is fixed by the server at ₹5,000.
+                      The registration fee is fixed by the server at ₹5,000 and is
+                      non-refundable.
                     </p>
                   </div>
                 </div>
 
-                <div className="mb-5 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                  <div className="flex items-center justify-between gap-4">
+                <div className="mb-6 overflow-hidden rounded-[26px] border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-indigo-50/60 p-6 text-slate-950 shadow-[0_18px_55px_-35px_rgba(37,99,235,0.35)] sm:p-7 sm:p-7">
+                  <div className="flex items-start justify-between gap-5">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-blue-600">
                         Registration fee
                       </p>
-                      <p className="mt-1 text-2xl font-bold text-slate-950">
+
+                      <p className="mt-2 text-4xl font-bold tracking-tight">
                         {formatINR(REGISTRATION_FEE)}
+                      </p>
+
+                      <p className="mt-2 text-sm text-slate-500">
+                        One-time registration payment
                       </p>
                     </div>
 
-                    <div className="rounded-xl bg-emerald-100 px-3 py-2 text-xs font-bold text-emerald-700">
-                      Seat reservation
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-white shadow-sm">
+                      <ReceiptIndianRupee className="h-5 w-5 text-blue-600" />
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid gap-2 sm:grid-cols-2">
+                    <div className="rounded-xl border border-blue-100 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600">
+                      ✓ Payment verification
+                    </div>
+
+                    <div className="rounded-xl border border-blue-100 bg-white px-3 py-2.5 text-xs font-semibold text-slate-600">
+                      ✓ Registration number
                     </div>
                   </div>
                 </div>
@@ -700,8 +782,8 @@ export default function RegistrationPage() {
                     onClick={() => setMode("UPI")}
                     className={`rounded-2xl border p-4 text-left transition ${
                       mode === "UPI"
-                        ? "border-blue-500 bg-blue-50 ring-4 ring-blue-500/10"
-                        : "border-slate-200 bg-white hover:border-slate-300"
+                        ? "border-blue-500 bg-blue-50/80 ring-4 ring-blue-500/10 shadow-[0_14px_35px_-24px_rgba(37,99,235,0.7)]"
+                        : "border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/30 hover:shadow-sm"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -722,8 +804,8 @@ export default function RegistrationPage() {
                     onClick={() => setMode("BANK_TRANSFER")}
                     className={`rounded-2xl border p-4 text-left transition ${
                       mode === "BANK_TRANSFER"
-                        ? "border-blue-500 bg-blue-50 ring-4 ring-blue-500/10"
-                        : "border-slate-200 bg-white hover:border-slate-300"
+                        ? "border-blue-500 bg-blue-50/80 ring-4 ring-blue-500/10 shadow-[0_14px_35px_-24px_rgba(37,99,235,0.7)]"
+                        : "border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/30 hover:shadow-sm"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -742,7 +824,24 @@ export default function RegistrationPage() {
                   </button>
                 </div>
 
-                <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5">
+                <div className="mb-5 rounded-[20px] border border-amber-200/80 bg-gradient-to-r from-amber-50 to-orange-50/60 p-5">
+  <div className="flex gap-3">
+    <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+      <ReceiptIndianRupee className="h-4 w-4" />
+    </div>
+    <div>
+      <p className="text-sm font-bold text-amber-950">
+        Registration fee is non-refundable
+      </p>
+      <p className="mt-1 text-xs leading-5 text-amber-900/75">
+        The ₹5,000 registration fee is collected for registration processing
+        and payment verification. It is non-refundable once submitted.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div className="mt-6 rounded-[24px] border border-slate-200/80 bg-[#f8fafc] p-5 shadow-inner sm:p-6">
                   {mode === "UPI" ? (
                     <>
                       <div className="mb-4 flex items-center gap-2">
@@ -753,11 +852,24 @@ export default function RegistrationPage() {
                       </div>
 
                       {UPI_ID ? (
-                        <PaymentDetail
-                          label="UPI ID"
-                          value={UPI_ID}
-                          copyable
-                        />
+                        <>
+                          <PaymentDetail
+                            label="UPI ID"
+                            value={UPI_ID}
+                            copyable
+                          />
+
+                          <div className="mt-4 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50/60 p-4">
+                            <p className="text-sm font-semibold text-blue-950">
+                              How to pay with UPI
+                            </p>
+                            <p className="mt-1 text-xs leading-5 text-blue-900/70">
+                              Open your UPI app, pay exactly ₹5,000 to the UPI ID
+                              above, then enter the transaction / UTR number
+                              below.
+                            </p>
+                          </div>
+                        </>
                       ) : (
                         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
                           <p className="text-sm font-bold text-amber-900">
@@ -791,7 +903,7 @@ export default function RegistrationPage() {
                           />
                           <PaymentDetail
                             label="Account number"
-                            value={maskAccount(BANK_ACCOUNT_NUMBER)}
+                            value={BANK_ACCOUNT_NUMBER}
                           />
                           <PaymentDetail
                             label="IFSC"
@@ -802,6 +914,17 @@ export default function RegistrationPage() {
                             label="Branch"
                             value={BANK_BRANCH}
                           />
+
+                          <div className="mt-4 rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50/60 p-4">
+                            <p className="text-sm font-semibold text-blue-950">
+                              How to pay by bank transfer
+                            </p>
+                            <p className="mt-1 text-xs leading-5 text-blue-900/70">
+                              Transfer exactly ₹5,000 using NEFT, IMPS or another
+                              supported bank-transfer method. Keep the bank
+                              transaction reference ready for verification.
+                            </p>
+                          </div>
                         </div>
                       ) : (
                         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
@@ -825,14 +948,14 @@ export default function RegistrationPage() {
                     onChange={setTransactionId}
                     placeholder="Enter the transaction reference"
                   />
-                  <p className="mt-2 text-xs leading-5 text-slate-400">
-                    Enter the exact transaction reference shown by your bank or
-                    UPI app.
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    Enter the exact UTR / transaction reference shown after
+                    completing your payment.
                   </p>
                 </div>
               </section>
 
-              <section className="border-t border-slate-100 pt-8">
+              <section className="border-t border-slate-100 px-6 py-8 sm:px-8 sm:py-10">
                 <div className="mb-5 flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
                     <FileCheck2 className="h-5 w-5" />
@@ -848,7 +971,7 @@ export default function RegistrationPage() {
                   </div>
                 </div>
 
-                <label className="group flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center transition hover:border-blue-400 hover:bg-blue-50/40">
+                <label className="group flex cursor-pointer flex-col items-center justify-center rounded-[24px] border border-dashed border-slate-300 bg-gradient-to-br from-slate-50 to-blue-50/30 px-5 py-10 text-center transition duration-200 hover:border-blue-400 hover:bg-blue-50/50">
                   <input
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png,.webp"
@@ -870,7 +993,7 @@ export default function RegistrationPage() {
                 </label>
               </section>
 
-              <section className="border-t border-slate-100 pt-8">
+              <section className="border-t border-slate-100 px-6 py-8 sm:px-8 sm:py-10">
                 <label className="block">
                   <span className="mb-2 block text-sm font-semibold text-slate-800">
                     Additional note
@@ -884,7 +1007,7 @@ export default function RegistrationPage() {
                     onChange={(event) => setNotes(event.target.value)}
                     placeholder="Anything our admissions team should know?"
                     rows={4}
-                    className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                    className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/8"
                   />
                 </label>
               </section>
@@ -897,19 +1020,36 @@ export default function RegistrationPage() {
                 </div>
               )}
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <div className="flex gap-3">
-                  <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">
-                      Payment verification
-                    </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">
-                      Your registration is not automatically approved. The
-                      TechSkillHub admissions team will verify the transaction
-                      and payment proof before marking the registration as
-                      confirmed.
-                    </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-5">
+                  <div className="flex gap-3">
+                    <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">
+                        Payment verification
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-slate-600">
+                        Your payment details and proof are reviewed by the
+                        TechSkillHub admissions team before registration is
+                        confirmed.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-amber-100 bg-amber-50/70 p-5">
+                  <div className="flex gap-3">
+                    <ReceiptIndianRupee className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                    <div>
+                      <p className="text-sm font-bold text-slate-900">
+                        Non-refundable registration fee
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-slate-600">
+                        The ₹5,000 registration fee is non-refundable.
+                        Registration payment verification does not by itself
+                        confirm admission or enrollment.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -917,7 +1057,7 @@ export default function RegistrationPage() {
               <button
                 type="submit"
                 disabled={submitting || loadingCourses}
-                className="flex h-13 w-full items-center justify-center gap-2 roundedxl bg-blue-600 px-5 py-4 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex h-14 w-full items-center justify-center gap-2 rounded-[14px] bg-blue-600 px-5 py-4 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? (
                   <>
@@ -933,13 +1073,15 @@ export default function RegistrationPage() {
               </button>
 
               <p className="text-center text-xs leading-5 text-slate-400">
-                By submitting, you confirm that the payment information and
-                applicant details provided are accurate.
+                By submitting, you confirm that the applicant and payment
+                information provided is accurate and acknowledge that the
+                ₹5,000 registration fee is non-refundable. Payment verification
+                does not by itself confirm admission or enrollment.
               </p>
             </div>
           </form>
 
-          <aside className="space-y-5">
+          <aside className="space-y-5 lg:sticky lg:top-24">
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
@@ -957,10 +1099,10 @@ export default function RegistrationPage() {
 
               <div className="mt-6 space-y-3">
                 {[
-                  "Reserves your application/payment slot",
-                  "Payment is manually verified by TechSkillHub",
+                  "Creates your registration payment record",
+                  "Payment is reviewed by TechSkillHub",
                   "You receive a unique registration number",
-                  "Full admission application follows verification",
+                  "Admission application follows successful verification",
                 ].map((item) => (
                   <div key={item} className="flex gap-3">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
@@ -993,7 +1135,7 @@ export default function RegistrationPage() {
             </div>
 
             <div className="rounded-3xl bg-slate-950 p-6 text-white shadow-xl shadow-slate-300/30">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-300">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">
                 Need help?
               </p>
 
@@ -1001,16 +1143,16 @@ export default function RegistrationPage() {
                 Keep your transaction details ready.
               </p>
 
-              <p className="mt-2 text-sm leading-6 text-slate-300">
+              <p className="mt-2 text-sm leading-6 text-slate-500">
                 If your payment has already been made, keep the UTR and proof
                 available so our admissions team can verify it quickly.
               </p>
 
               <a
-                href="mailto:techskillhubofficial@gmail.com"
-                className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-white transition hover:text-blue-300"
+                href="mailto:support@techskillhub.online"
+                className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-white transition hover:text-blue-600"
               >
-                techskillhubofficial@gmail.com
+                support@techskillhub.online
                 <ArrowRight className="h-4 w-4" />
               </a>
             </div>
@@ -1018,5 +1160,25 @@ export default function RegistrationPage() {
         </div>
       </div>
     </main>
+    <Footer />
+    </>
+  );
+}
+
+export default function RegistrationPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-white text-slate-950">
+          <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-6">
+            <div className="text-sm font-medium text-slate-500">
+              Loading registration...
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <RegistrationPageContent />
+    </Suspense>
   );
 }

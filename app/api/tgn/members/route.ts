@@ -6,6 +6,7 @@ import {
   canManageNetwork,
   getTgnContext,
 } from "@/lib/tgn/authorization";
+import { getTgnAccessibleMemberIds } from "@/lib/tgn/hierarchy";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +29,14 @@ export async function GET(request: Request) {
     const memberType = searchParams.get("memberType");
     const status = searchParams.get("status");
 
+    const accessibleMemberIds =
+      await getTgnAccessibleMemberIds(context);
+
     const members = await prisma.tgnMemberProfile.findMany({
       where: {
+        id: {
+          in: accessibleMemberIds,
+        },
         ...(memberType &&
         Object.values(TgnMemberType).includes(
           memberType as TgnMemberType,

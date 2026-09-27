@@ -6,6 +6,7 @@ import {
   canManageNetwork,
   getTgnContext,
 } from "@/lib/tgn/authorization";
+import { getTgnLeadScope } from "@/lib/tgn/hierarchy";
 
 export const dynamic = "force-dynamic";
 
@@ -36,19 +37,10 @@ export async function GET(request: Request) {
         ? (status as LeadStatus)
         : null;
 
+    const tgnLeadScope = await getTgnLeadScope(context);
+
     const where = {
-      OR: [
-        {
-          tgnSourceMemberId: {
-            not: null,
-          },
-        },
-        {
-          tgnOwnerId: {
-            not: null,
-          },
-        },
-      ],
+      ...tgnLeadScope,
       ...(validStatus
         ? {
             status: validStatus,
@@ -166,38 +158,12 @@ export async function GET(request: Request) {
     const [total, statusCounts] =
       await Promise.all([
         prisma.lead.count({
-          where: {
-            OR: [
-              {
-                tgnSourceMemberId: {
-                  not: null,
-                },
-              },
-              {
-                tgnOwnerId: {
-                  not: null,
-                },
-              },
-            ],
-          },
+          where: tgnLeadScope,
         }),
 
         prisma.lead.groupBy({
           by: ["status"],
-          where: {
-            OR: [
-              {
-                tgnSourceMemberId: {
-                  not: null,
-                },
-              },
-              {
-                tgnOwnerId: {
-                  not: null,
-                },
-              },
-            ],
-          },
+          where: tgnLeadScope,
           _count: {
             _all: true,
           },

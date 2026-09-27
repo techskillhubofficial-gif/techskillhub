@@ -7,6 +7,7 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { getTgnAccessibleMemberIds } from "@/lib/tgn/hierarchy";
 
 export const dynamic = "force-dynamic";
 
@@ -102,9 +103,19 @@ export async function GET(request: Request) {
         ? (memberTypeParam as TgnMemberType)
         : undefined;
 
+    const accessibleMemberIds = await getTgnAccessibleMemberIds(tgnContext);
+    const isFounder = tgnContext?.access === "FOUNDER";
+
     const applications =
       await prisma.tgnApplication.findMany({
         where: {
+          ...(isFounder
+            ? {}
+            : {
+                sourceMemberId: {
+                  in: accessibleMemberIds ?? [],
+                },
+              }),
           ...(status ? { status } : {}),
           ...(memberType ? { memberType } : {}),
           ...(search

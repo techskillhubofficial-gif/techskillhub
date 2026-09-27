@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import {
+  AdmissionStatus,
   LeadStatus,
   LeadFollowUpStatus,
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+
+import { getAdminTgnScope } from "@/lib/tgn/admin-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -162,6 +165,11 @@ function getRelativeTime(date: Date) {
 
 export async function GET() {
   try {
+    const adminScope = await getAdminTgnScope();
+    const dashboardLeadScope = adminScope.isTgnScoped
+      ? adminScope.leadWhere
+      : {};
+
     const now = new Date();
 
     /*
@@ -222,16 +230,18 @@ export async function GET() {
       recentLeads,
     ] = await Promise.all([
       prisma.lead.groupBy({
+        where: dashboardLeadScope,
         by: ["status"],
         _count: {
           _all: true,
         },
       }),
 
-      prisma.lead.count(),
+      prisma.lead.count({ where: dashboardLeadScope }),
 
       prisma.lead.count({
         where: {
+          ...dashboardLeadScope,
           createdAt: {
             gte: currentMonthStart,
             lt: new Date(
@@ -247,6 +257,7 @@ export async function GET() {
 
       prisma.lead.count({
         where: {
+          ...dashboardLeadScope,
           createdAt: {
             gte: previousMonthStart,
             lt: currentMonthStart,
@@ -256,6 +267,7 @@ export async function GET() {
 
       prisma.lead.count({
         where: {
+          ...dashboardLeadScope,
           status: LeadStatus.ENROLLED,
           createdAt: {
             gte: currentMonthStart,
@@ -265,6 +277,7 @@ export async function GET() {
 
       prisma.lead.count({
         where: {
+          ...dashboardLeadScope,
           status: LeadStatus.ENROLLED,
           createdAt: {
             gte: previousMonthStart,
@@ -275,6 +288,7 @@ export async function GET() {
 
       prisma.lead.findMany({
         where: {
+          ...dashboardLeadScope,
           createdAt: {
             gte: nineMonthStart,
           },
@@ -289,6 +303,11 @@ export async function GET() {
       }),
 
       prisma.leadActivity.findMany({
+        where: {
+          lead: {
+            is: dashboardLeadScope,
+          },
+        },
         orderBy: {
           createdAt: "desc",
         },
@@ -305,6 +324,9 @@ export async function GET() {
 
       prisma.leadFollowUp.findMany({
         where: {
+          lead: {
+            is: dashboardLeadScope,
+          },
           status: LeadFollowUpStatus.PENDING,
           scheduledAt: {
             gte: todayStart,
@@ -328,12 +350,18 @@ export async function GET() {
 
       prisma.leadFollowUp.count({
         where: {
+          lead: {
+            is: dashboardLeadScope,
+          },
           status: LeadFollowUpStatus.PENDING,
         },
       }),
 
       prisma.leadFollowUp.count({
         where: {
+          lead: {
+            is: dashboardLeadScope,
+          },
           status: LeadFollowUpStatus.PENDING,
           scheduledAt: {
             lt: todayStart,
@@ -343,6 +371,7 @@ export async function GET() {
 
       prisma.lead.count({
         where: {
+          ...dashboardLeadScope,
           status: LeadStatus.QUALIFIED,
           followUps: {
             some: {
@@ -353,6 +382,7 @@ export async function GET() {
       }),
 
       prisma.lead.findMany({
+        where: dashboardLeadScope,
         orderBy: {
           createdAt: "desc",
         },
@@ -369,6 +399,43 @@ export async function GET() {
           source: true,
           assignedTo: true,
           createdAt: true,
+        },
+      }),
+    ]);
+
+    const [
+      applicationsPending,
+      admissionsPending,
+      paymentVerification,
+      documentsPending,
+    ] = await Promise.all([
+      prisma.admissionApplication.count({
+        where: {
+          status: {
+            in: [
+              "SUBMITTED",
+              "UNDER_REVIEW",
+              "CHANGES_REQUESTED",
+            ],
+          },
+        },
+      }),
+
+      prisma.admission.count({
+        where: {
+          status: AdmissionStatus.PENDING,
+        },
+      }),
+
+      prisma.admission.count({
+        where: {
+          status: AdmissionStatus.PAYMENT_VERIFICATION,
+        },
+      }),
+
+      prisma.admission.count({
+        where: {
+          status: AdmissionStatus.DOCUMENTS_PENDING,
         },
       }),
     ]);
@@ -401,6 +468,13 @@ export async function GET() {
       closed: getStatusCount(
         LeadStatus.CLOSED,
       ),
+    };
+
+    const admissionOperations = {
+      applicationsPending,
+      admissionsPending,
+      paymentVerification,
+      documentsPending,
     };
 
     /*
@@ -568,6 +642,13 @@ export async function GET() {
 
       stats,
 
+      admissionOperations,
+
+      viewer: {
+        isNetworkManager:
+          adminScope.isNetworkManager,
+      },
+
       period,
 
       growth,
@@ -591,6 +672,14 @@ export async function GET() {
         success: false,
         message:
           "Failed to load dashboard data",
+        ...(process.env.NODE_ENV !== "production"
+          ? {
+              debug:
+                error instanceof Error
+                  ? error.message
+                  : String(error),
+            }
+          : {}),
       },
       {
         status: 500,

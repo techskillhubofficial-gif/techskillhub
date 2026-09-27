@@ -19,7 +19,8 @@ export async function POST(request: Request) {
     if (
       !context ||
       !context.memberId ||
-      (context.access !== "TEAM_LEADER" &&
+      (context.access !== "NETWORK_MANAGER" &&
+        context.access !== "TEAM_LEADER" &&
         context.access !== "EXECUTIVE")
     ) {
       return NextResponse.json(
@@ -45,6 +46,24 @@ export async function POST(request: Request) {
     const notes = clean(body.notes);
     const preferredContact =
       clean(body.preferredContact) || "WHATSAPP";
+
+    const qualification = {
+      educationLevel: clean(body.educationLevel),
+      institution: clean(body.institution),
+      graduationYear: clean(body.graduationYear),
+      currentOccupation: clean(body.currentOccupation),
+      workExperience: clean(body.workExperience),
+      currentSkillLevel: clean(body.currentSkillLevel),
+      requirement: clean(body.requirement),
+      mainObjection: clean(body.mainObjection),
+      decisionTimeline: clean(body.decisionTimeline),
+      temperature: clean(body.temperature).toUpperCase(),
+      nextAction: clean(body.nextAction),
+    };
+
+    const qualificationData = Object.fromEntries(
+      Object.entries(qualification).filter(([, value]) => value),
+    );
 
     if (fullName.length < 3) {
       return NextResponse.json(
@@ -122,30 +141,52 @@ export async function POST(request: Request) {
       );
     }
 
-    const lead = await prisma.lead.create({
-      data: {
-        fullName,
-        email,
-        phone,
-        currentStatus,
-        interestedProgram,
-        careerGoal: careerGoal || null,
-        preferredContact,
-        status: LeadStatus.NEW,
-        source: "TGN",
-        notes: notes || null,
-        tgnOwnerId: context.memberId,
-        tgnSourceMemberId: context.memberId,
-      },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        phone: true,
-        status: true,
-        interestedProgram: true,
-        createdAt: true,
-      },
+    const lead = await prisma.$transaction(async (tx) => {
+      const createdLead = await tx.lead.create({
+        data: {
+          fullName,
+          email,
+          phone,
+          currentStatus,
+          interestedProgram,
+          careerGoal: careerGoal || null,
+          preferredContact,
+          status: LeadStatus.NEW,
+          source: "TGN",
+          notes: notes || null,
+          tgnOwnerId: context.memberId,
+          tgnSourceMemberId: context.memberId,
+        },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          status: true,
+          interestedProgram: true,
+          createdAt: true,
+        },
+      });
+
+      await tx.leadActivity.create({
+        data: {
+          leadId: createdLead.id,
+          type: "LEAD_CREATED",
+          title: "Lead created through TGN",
+          description:
+            notes ||
+            "New lead created through the Growth Network workspace.",
+          metadata: {
+            source: "TGN",
+            access: context.access,
+            sourceMemberId: context.memberId,
+            ownerMemberId: context.memberId,
+            qualification: qualificationData,
+          },
+        },
+      });
+
+      return createdLead;
     });
 
     return NextResponse.json({

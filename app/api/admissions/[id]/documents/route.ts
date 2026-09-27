@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import { getAdminTgnScope } from "@/lib/tgn/admin-scope";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -82,10 +83,20 @@ async function requireSession() {
   return session;
 }
 
-async function getAdmission(id: string) {
-  return prisma.admission.findUnique({
+async function getAdmission(
+  id: string,
+  adminScope: Awaited<ReturnType<typeof getAdminTgnScope>>,
+) {
+  return prisma.admission.findFirst({
     where: {
       id,
+      ...(adminScope.isTgnScoped
+        ? {
+            lead: {
+              is: adminScope.leadWhere,
+            },
+          }
+        : {}),
     },
     select: {
       id: true,
@@ -171,6 +182,12 @@ export async function GET(
   context: RouteContext,
 ) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return jsonError("Unauthorized", 403);
+    }
+
     const session = await requireSession();
 
     if (!session) {
@@ -184,7 +201,10 @@ export async function GET(
       return jsonError("Admission ID is required.");
     }
 
-    const admission = await getAdmission(admissionId);
+    const admission = await getAdmission(
+      admissionId,
+      adminScope,
+    );
 
     if (!admission) {
       return jsonError("Admission not found.", 404);
@@ -246,6 +266,12 @@ export async function POST(
   context: RouteContext,
 ) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return jsonError("Unauthorized", 403);
+    }
+
     const session = await requireSession();
 
     if (!session) {
@@ -259,7 +285,10 @@ export async function POST(
       return jsonError("Admission ID is required.");
     }
 
-    const admission = await getAdmission(admissionId);
+    const admission = await getAdmission(
+      admissionId,
+      adminScope,
+    );
 
     if (!admission) {
       return jsonError("Admission not found.", 404);

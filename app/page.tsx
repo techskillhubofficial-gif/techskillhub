@@ -3,61 +3,52 @@ import { Footer } from "@/components/layout/Footer";
 
 import { Hero } from "@/components/home/Hero";
 import { CareerPaths } from "@/components/home/CareerPaths";
+import { PremiumLearningShowcase } from "@/components/home/PremiumLearningShowcase";
+import { Audience } from "@/components/home/Audience";
 import { WhyTechSkillHub } from "@/components/home/WhyTechSkillHub";
 import { LearningProcess } from "@/components/home/LearningProcess";
-import { Projects } from "@/components/home/Projects";
-import { Curriculum } from "@/components/home/Curriculum";
-import { WhyDifferent } from "@/components/home/WhyDifferent";
-import { FounderMission } from "@/components/home/FounderMission";
+import VisualShowcase from "@/components/home/VisualShowcase";
+import Projects from "@/components/home/Projects";
+import PortfolioShowcase from "@/components/home/PortfolioShowcase";
+import { PlatformExperience } from "@/components/home/PlatformExperience";
 import { Founder } from "@/components/home/Founder";
 import { Consultation } from "@/components/home/Consultation";
 import { FAQ } from "@/components/home/FAQ";
+import { HomeMotion } from "@/components/home/HomeMotion";
 
 export default function Home() {
   return (
     <>
-      {/* Navigation */}
       <Navbar />
 
-      {/* Main Content */}
       <main className="flex min-h-screen flex-col overflow-x-hidden bg-white">
-
-        {/* Hero Section */}
+        <HomeMotion />
         <Hero />
 
-        {/* Career Programs */}
-        <CareerPaths />
-
-        {/* Why Choose TechSkill Hub */}
         <WhyTechSkillHub />
 
-        {/* Learning Journey */}
+        <CareerPaths />
+
+        <PremiumLearningShowcase />
+
+        <VisualShowcase />
+        <Projects />
+        <PortfolioShowcase />
+
+        <Audience />
+
         <LearningProcess />
 
-        {/* Real Projects */}
-        <Projects />
+        <PlatformExperience />
 
-        {/* Curriculum */}
-        <Curriculum />
 
-        {/* Why We're Different */}
-        <WhyDifferent />
-
-        {/* Founder's Vision */}
-        <FounderMission />
-
-        {/* Meet the Founder */}
-        <Founder />
-
-        {/* Final Call To Action */}
         <Consultation />
 
-        {/* Frequently Asked Questions */}
-        <FAQ />
+        <Founder />
 
+        <FAQ />
       </main>
 
-      {/* Footer */}
       <Footer />
     </>
   );

@@ -12,6 +12,7 @@ import {
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TECHSKILLHUB_REGISTRATION_FEE } from "@/lib/fees";
+import { getAdminTgnScope } from "@/lib/tgn/admin-scope";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -854,6 +855,16 @@ export async function GET(
       );
     }
 
+    const adminScope =
+      await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return errorResponse(
+        "Forbidden. Admin access required.",
+        403,
+      );
+    }
+
     const {
       searchParams,
     } = new URL(
@@ -975,6 +986,20 @@ export async function GET(
       (page - 1) *
       pageSize;
 
+    const registrationPaymentWhere:
+      Prisma.RegistrationPaymentWhereInput =
+      {
+        ...where,
+
+        ...(adminScope.isTgnScoped
+          ? {
+              lead: {
+                is: adminScope.leadWhere,
+              },
+            }
+          : {}),
+      };
+
     const [
       payments,
       total,
@@ -983,7 +1008,8 @@ export async function GET(
         [
           prisma.registrationPayment.findMany(
             {
-              where,
+              where:
+                registrationPaymentWhere,
 
               orderBy: {
                 submittedAt:
@@ -1065,7 +1091,8 @@ export async function GET(
 
           prisma.registrationPayment.count(
             {
-              where,
+              where:
+                registrationPaymentWhere,
             },
           ),
         ],

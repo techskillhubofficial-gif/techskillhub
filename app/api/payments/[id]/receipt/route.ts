@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { PaymentStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getAdminTgnScope } from "@/lib/tgn/admin-scope";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -291,6 +292,15 @@ function drawSummaryRow(
 
 export async function GET(_request: Request, context: RouteContext) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 403 },
+      );
+    }
+
     const { id } = await context.params;
     const paymentId = id?.trim();
 
@@ -301,8 +311,19 @@ export async function GET(_request: Request, context: RouteContext) {
       );
     }
 
-    const payment = await prisma.payment.findUnique({
-      where: { id: paymentId },
+    const payment = await prisma.payment.findFirst({
+      where: {
+        id: paymentId,
+        ...(adminScope.isTgnScoped
+          ? {
+              admission: {
+                lead: {
+                  is: adminScope.leadWhere,
+                },
+              },
+            }
+          : {}),
+      },
       include: {
         admission: {
           include: {

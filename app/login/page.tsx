@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, ReactNode, useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -45,6 +45,10 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      await signOut({
+        redirect: false,
+      });
+
       const result = await signIn("credentials", {
         email: normalizedEmail,
         password,

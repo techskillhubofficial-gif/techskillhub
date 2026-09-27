@@ -8,7 +8,7 @@ interface ConsultationModalProps {
 }
 
 export default function ConsultationModal({
-  buttonText = "Get Free Career Guidance",
+  buttonText = "Get Career Guidance",
 }: ConsultationModalProps) {
   const [open, setOpen] = useState(false);
 
@@ -22,8 +22,8 @@ export default function ConsultationModal({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
-          <div className="relative w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm sm:p-6">
+          <div className="relative my-6 w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-8">
 
             <button
               onClick={() => setOpen(false)}
@@ -32,13 +32,13 @@ export default function ConsultationModal({
               ×
             </button>
 
-            <h2 className="text-4xl font-bold text-slate-900">
-              Get Free Career Guidance
+            <h2 className="pr-10 text-2xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+              Get Career Guidance
             </h2>
 
             <p className="mt-3 text-gray-600">
-              Tell us about your goals and our career experts
-              will recommend the best roadmap for your career.
+              Tell us where you are today and what you want to achieve.
+              We’ll help you understand your next step.
             </p>
 
             <div className="mt-8">

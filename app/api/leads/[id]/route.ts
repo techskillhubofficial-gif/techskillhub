@@ -6,6 +6,7 @@ import {
 } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { getAdminTgnScope } from "@/lib/tgn/admin-scope";
 import {
   LeadActivitySchema,
   UpdateLeadSchema,
@@ -211,6 +212,8 @@ export async function GET(
   context: RouteContext,
 ) {
   try {
+    const adminScope = await getAdminTgnScope();
+
     const { id } = await context.params;
 
     if (!id?.trim()) {
@@ -220,9 +223,16 @@ export async function GET(
     }
 
     const lead =
-      await prisma.lead.findUnique({
+      await prisma.lead.findFirst({
         where: {
-          id: id.trim(),
+          AND: [
+            {
+              id: id.trim(),
+            },
+            ...(adminScope.isTgnScoped
+              ? [adminScope.leadWhere]
+              : []),
+          ],
         },
         include: {
           activities: {
@@ -290,6 +300,8 @@ export async function PATCH(
   context: RouteContext,
 ) {
   try {
+    const adminScope = await getAdminTgnScope();
+
     const { id } = await context.params;
 
     if (!id?.trim()) {
@@ -301,9 +313,16 @@ export async function PATCH(
     const leadId = id.trim();
 
     const existingLead =
-      await prisma.lead.findUnique({
+      await prisma.lead.findFirst({
         where: {
-          id: leadId,
+          AND: [
+            {
+              id: leadId,
+            },
+            ...(adminScope.isTgnScoped
+              ? [adminScope.leadWhere]
+              : []),
+          ],
         },
       });
 
@@ -681,10 +700,22 @@ export async function DELETE(
 
     const leadId = id.trim();
 
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return jsonError(
+        "Unauthorized",
+        403,
+      );
+    }
+
     const existingLead =
-      await prisma.lead.findUnique({
+      await prisma.lead.findFirst({
         where: {
           id: leadId,
+          ...(adminScope.isTgnScoped
+            ? adminScope.leadWhere
+            : {}),
         },
         select: {
           id: true,

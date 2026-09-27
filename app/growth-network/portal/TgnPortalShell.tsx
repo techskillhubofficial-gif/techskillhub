@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useMemo, useState, type FormEvent } from "react";
+import TgnLeadWorkspace from "./TgnLeadWorkspace";
+
 import {
   Activity,
   ArrowRight,
@@ -32,7 +34,7 @@ type PortalData = {
   name: string;
   firstName: string;
   email: string;
-  role: "TEAM_LEADER" | "EXECUTIVE";
+  role: "NETWORK_MANAGER" | "TEAM_LEADER" | "EXECUTIVE";
   memberType: string;
   status: string;
   referralCode: string | null;
@@ -80,6 +82,13 @@ type PortalData = {
     eligible: number;
     approved: number;
     paid: number;
+  };
+
+  network: {
+    members: number;
+    teamLeaders: number;
+    executives: number;
+    teams: number;
   };
 
   recentLeads: Array<{
@@ -139,6 +148,12 @@ const navigation = [
     label: "Recruitment",
     icon: UserPlus,
     leaderOnly: true,
+  },
+  {
+    id: "operations",
+    label: "Network Operations",
+    icon: Network,
+    managerOnly: true,
   },
   {
     id: "leads",
@@ -235,11 +250,20 @@ export default function TgnPortalShell({
   const [copied, setCopied] = useState(false);
   const [search, setSearch] = useState("");
   const [leadOpen, setLeadOpen] = useState(false);
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [leadSaving, setLeadSaving] = useState(false);
   const [leadError, setLeadError] = useState("");
   const [leadSuccess, setLeadSuccess] = useState(false);
 
-  const isTeamLeader = data.role === "TEAM_LEADER";
+  const isNetworkManager =
+    data.role === "NETWORK_MANAGER";
+  const isTeamLeader =
+    data.role === "TEAM_LEADER";
+  const roleLabel = isNetworkManager
+    ? "Network Manager"
+    : isTeamLeader
+      ? "Team Leader"
+      : "Growth Executive";
   const currentLifecycle = lifecycleIndex(data.status);
 
   const filteredLeads = useMemo(() => {
@@ -311,6 +335,17 @@ export default function TgnPortalShell({
               form.get("preferredContact") ||
               "WHATSAPP",
             careerGoal: form.get("careerGoal"),
+            educationLevel: form.get("educationLevel"),
+            institution: form.get("institution"),
+            graduationYear: form.get("graduationYear"),
+            currentOccupation: form.get("currentOccupation"),
+            workExperience: form.get("workExperience"),
+            currentSkillLevel: form.get("currentSkillLevel"),
+            requirement: form.get("requirement"),
+            mainObjection: form.get("mainObjection"),
+            decisionTimeline: form.get("decisionTimeline"),
+            temperature: form.get("temperature"),
+            nextAction: form.get("nextAction"),
             notes: form.get("notes"),
           }),
         },
@@ -406,7 +441,8 @@ export default function TgnPortalShell({
           {navigation
             .filter(
               (item) =>
-                !item.leaderOnly || isTeamLeader,
+                (!item.leaderOnly || isTeamLeader) &&
+                  (!item.managerOnly || isNetworkManager),
             )
             .map((item) => {
               const Icon = item.icon;
@@ -464,9 +500,7 @@ export default function TgnPortalShell({
                 {data.name}
               </p>
               <p className="text-[11px] text-slate-500">
-                {isTeamLeader
-                  ? "Team Leader"
-                  : "Growth Executive"}
+                {roleLabel}
               </p>
             </div>
           </div>
@@ -541,9 +575,7 @@ export default function TgnPortalShell({
                   {data.name}
                 </p>
                 <p className="text-xs text-slate-500">
-                  {isTeamLeader
-                    ? "Team Leader"
-                    : "Growth Executive"}
+                  {roleLabel}
                 </p>
               </div>
 
@@ -579,9 +611,11 @@ export default function TgnPortalShell({
                       </h1>
 
                       <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                        {isTeamLeader
-                          ? "Manage your team recruitment, CRM activity and approved growth responsibilities from one TechSkillHub workspace."
-                          : "Manage your TGN activity, CRM leads, performance and professional growth from one TechSkillHub workspace."}
+                        {isNetworkManager
+                          ? "Monitor the TGN network, review CRM activity and coordinate operational follow-through from one TechSkillHub workspace."
+                          : isTeamLeader
+                            ? "Manage your team recruitment, CRM activity and approved growth responsibilities from one TechSkillHub workspace."
+                            : "Manage your TGN activity, CRM leads, performance and professional growth from one TechSkillHub workspace."}
                       </p>
                     </div>
                   </div>
@@ -960,6 +994,48 @@ export default function TgnPortalShell({
               </section>
             )}
 
+            {isNetworkManager ? (
+              <section
+                id="operations"
+                className="scroll-mt-24"
+              >
+                <div className="rounded-[26px] border border-blue-100 bg-white p-6 shadow-sm">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600">
+                        Network Operations
+                      </p>
+                      <h2 className="mt-1 text-xl font-bold text-slate-900">
+                        TGN management workspace
+                      </h2>
+                      <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                        Monitor network activity and open the existing TGN management modules when deeper operational control is required.
+                      </p>
+                    </div>
+
+                    <span className="inline-flex w-fit items-center rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700 ring-1 ring-blue-100">
+                      Network-wide access
+                    </span>
+                  </div>
+
+                  <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <MiniMetric label="TGN members" value={data.network.members} />
+                    <MiniMetric label="Team leaders" value={data.network.teamLeaders} />
+                    <MiniMetric label="Growth executives" value={data.network.executives} />
+                    <MiniMetric label="TGN teams" value={data.network.teams} />
+                  </div>
+
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                    <ManagerAction label="Applications" href="/dashboard/growth-network/applications" />
+                    <ManagerAction label="Members" href="/dashboard/growth-network/members" />
+                    <ManagerAction label="Teams" href="/dashboard/growth-network/teams" />
+                    <ManagerAction label="TGN Leads" href="/dashboard/growth-network/leads" />
+                    <ManagerAction label="Reports" href="/dashboard/growth-network/reports" />
+                  </div>
+                </div>
+              </section>
+            ) : null}
+
             <section
               id="team"
               className="scroll-mt-24"
@@ -1208,7 +1284,10 @@ export default function TgnPortalShell({
                             (lead) => (
                               <tr
                                 key={lead.id}
-                                className="transition hover:bg-slate-50"
+                                onClick={() =>
+                                  setSelectedLeadId(lead.id)
+                                }
+                                className="cursor-pointer transition hover:bg-slate-50"
                               >
                                 <td className="px-4 py-4">
                                   <p className="text-sm font-semibold text-slate-900">
@@ -1278,6 +1357,14 @@ export default function TgnPortalShell({
                 </div>
               </div>
             </section>
+
+            {selectedLeadId ? (
+              <TgnLeadWorkspace
+                leadId={selectedLeadId}
+                role={data.role}
+                onClose={() => setSelectedLeadId(null)}
+              />
+            ) : null}
 
             <section
               id="performance"
@@ -1727,6 +1814,102 @@ export default function TgnPortalShell({
                   />
                 </Field>
 
+                <details className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <summary className="cursor-pointer list-none text-sm font-semibold text-slate-800">
+                    Initial qualification
+                    <span className="ml-2 text-xs font-normal text-slate-500">
+                      Optional
+                    </span>
+                  </summary>
+
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <Field label="Education level">
+                      <input
+                        name="educationLevel"
+                        className={inputClass}
+                      />
+                    </Field>
+
+                    <Field label="College / University">
+                      <input
+                        name="institution"
+                        className={inputClass}
+                      />
+                    </Field>
+
+                    <Field label="Graduation year">
+                      <input
+                        name="graduationYear"
+                        className={inputClass}
+                      />
+                    </Field>
+
+                    <Field label="Current occupation">
+                      <input
+                        name="currentOccupation"
+                        className={inputClass}
+                      />
+                    </Field>
+
+                    <Field label="Work experience">
+                      <input
+                        name="workExperience"
+                        className={inputClass}
+                      />
+                    </Field>
+
+                    <Field label="Current skill level">
+                      <input
+                        name="currentSkillLevel"
+                        className={inputClass}
+                      />
+                    </Field>
+
+                    <Field label="Requirement">
+                      <input
+                        name="requirement"
+                        className={inputClass}
+                      />
+                    </Field>
+
+                    <Field label="Main objection">
+                      <input
+                        name="mainObjection"
+                        className={inputClass}
+                      />
+                    </Field>
+
+                    <Field label="Decision timeline">
+                      <input
+                        name="decisionTimeline"
+                        className={inputClass}
+                      />
+                    </Field>
+
+                    <Field label="Lead temperature">
+                      <select
+                        name="temperature"
+                        defaultValue=""
+                        className={inputClass}
+                      >
+                        <option value="">Not set</option>
+                        <option value="HOT">Hot</option>
+                        <option value="WARM">Warm</option>
+                        <option value="COLD">Cold</option>
+                      </select>
+                    </Field>
+
+                    <div className="sm:col-span-2">
+                      <Field label="Next action">
+                        <input
+                          name="nextAction"
+                          className={inputClass}
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                </details>
+
                 <Field label="Notes">
                   <textarea
                     name="notes"
@@ -1771,6 +1954,26 @@ export default function TgnPortalShell({
         </div>
       )}
     </div>
+  );
+}
+
+function ManagerAction({
+  label,
+  href,
+}: {
+  label: string;
+  href: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 transition hover:border-blue-200 hover:bg-blue-50"
+    >
+      <span className="text-sm font-semibold text-slate-800">
+        {label}
+      </span>
+      <ArrowRight className="h-4 w-4 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-blue-600" />
+    </Link>
   );
 }
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { LeadActivityType, LeadFollowUpStatus,  } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { getAdminTgnScope } from "@/lib/tgn/admin-scope";
 import { LeadFollowUpSchema } from "@/lib/validations/lead";
 
 export const dynamic = "force-dynamic";
@@ -17,11 +18,31 @@ export async function GET(
   context: RouteContext,
 ) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return NextResponse.json(
+        {
+          error: "Forbidden. Admin access required.",
+        },
+        {
+          status: 403,
+        },
+      );
+    }
+
     const { id } = await context.params;
 
-    const lead = await prisma.lead.findUnique({
+    const lead = await prisma.lead.findFirst({
       where: {
-        id,
+        AND: [
+          {
+            id,
+          },
+          ...(adminScope.isTgnScoped
+            ? [adminScope.leadWhere]
+            : []),
+        ],
       },
       select: {
         id: true,
@@ -78,11 +99,31 @@ export async function POST(
   context: RouteContext,
 ) {
   try {
+    const adminScope = await getAdminTgnScope();
+
+    if (!adminScope.isAuthorized) {
+      return NextResponse.json(
+        {
+          error: "Forbidden. Admin access required.",
+        },
+        {
+          status: 403,
+        },
+      );
+    }
+
     const { id } = await context.params;
 
-    const lead = await prisma.lead.findUnique({
+    const lead = await prisma.lead.findFirst({
       where: {
-        id,
+        AND: [
+          {
+            id,
+          },
+          ...(adminScope.isTgnScoped
+            ? [adminScope.leadWhere]
+            : []),
+        ],
       },
       select: {
         id: true,

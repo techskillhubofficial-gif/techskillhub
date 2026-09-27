@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth";
-import Sidebar from "@/components/dashboard/Sidebar";
-import TopNavbar from "@/components/dashboard/TopNavbar";
+import { getTgnContext } from "@/lib/tgn/authorization";
+import DashboardShell from "@/components/dashboard/DashboardShell";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -20,6 +20,7 @@ export default async function DashboardLayout({
   }
 
   const role = session.user.role;
+  const tgnContext = await getTgnContext();
 
   // TGN members use the dedicated Growth Network portal.
   if (role === "TGN_TEAM_LEADER" || role === "TGN_EXECUTIVE") {
@@ -36,19 +37,35 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  const isNetworkManager =
+    role === "ADMIN" &&
+    tgnContext?.access === "NETWORK_MANAGER";
+
+  const displayName =
+    session.user.name?.trim().split(/\s+/)[0] ||
+    session.user.email?.split("@")[0] ||
+    "User";
+
+  const initials = displayName
+    .slice(0, 2)
+    .toUpperCase();
+
+  const roleLabel = isNetworkManager
+    ? "Network Manager"
+    : role === "ADMIN"
+      ? "Administrator"
+      : role === "MENTOR"
+        ? "Mentor"
+        : "User";
+
   return (
-    <div className="min-h-screen bg-[#F7F9FC] text-slate-950">
-      <Sidebar />
-
-      <div className="min-h-screen lg:pl-[290px]">
-        <TopNavbar />
-
-        <main className="min-h-[calc(100vh-76px)] px-4 pb-10 pt-5 sm:px-6 lg:px-8 xl:px-10">
-          <div className="mx-auto w-full max-w-[1700px]">
-            {children}
-          </div>
-        </main>
-      </div>
-    </div>
+    <DashboardShell
+      displayName={displayName}
+      initials={initials}
+      roleLabel={roleLabel}
+      isNetworkManager={isNetworkManager}
+    >
+      {children}
+    </DashboardShell>
   );
 }

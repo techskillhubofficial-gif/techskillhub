@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   BarChart3,
   BookOpen,
+  CalendarClock,
   CalendarDays,
   ChevronRight,
   CircleDollarSign,
@@ -21,7 +22,6 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useState } from "react";
 
 interface NavigationItem {
   label: string;
@@ -88,6 +88,11 @@ const businessItems: NavigationItem[] = [
     label: "Registration Payments",
     href: "/dashboard/registration-payments",
     icon: ClipboardCheck,
+  },
+  {
+    label: "Counselling",
+    href: "/dashboard/counselling",
+    icon: CalendarClock,
   },
   {
     label: "Growth Network",
@@ -160,7 +165,7 @@ function NavigationSection({
                   "relative flex h-11 items-center gap-3 rounded-2xl px-3.5 text-sm font-medium transition-all duration-200",
                   active
                     ? "text-white"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-950",
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white",
                 ].join(" ")}
               >
                 <Icon
@@ -168,7 +173,7 @@ function NavigationSection({
                     "h-[18px] w-[18px] shrink-0",
                     active
                       ? "text-white"
-                      : "text-slate-400 group-hover:text-slate-700",
+                      : "text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 dark:group-hover:text-slate-200",
                   ].join(" ")}
                 />
 
@@ -180,7 +185,7 @@ function NavigationSection({
                       "rounded-full px-2 py-0.5 text-[10px] font-bold",
                       active
                         ? "bg-white/20 text-white"
-                        : "bg-slate-100 text-slate-500",
+                        : "bg-slate-100 text-slate-500 dark:text-slate-400 dark:bg-slate-800 dark:text-slate-300 dark:bg-slate-800 dark:text-slate-300",
                     ].join(" ")}
                   >
                     {item.badge}
@@ -199,15 +204,47 @@ function NavigationSection({
   );
 }
 
-export default function Sidebar() {
+export default function Sidebar({
+  isNetworkManager = false,
+  mobileOpen = false,
+  onMobileOpen,
+  onMobileClose,
+}: {
+  isNetworkManager?: boolean;
+  mobileOpen?: boolean;
+  onMobileOpen?: () => void;
+  onMobileClose?: () => void;
+}) {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
 
-  const closeMobile = () => setMobileOpen(false);
+  const visibleWorkspaceItems = isNetworkManager
+    ? workspaceItems.filter(
+        (item) =>
+          item.href === "/dashboard" ||
+          item.href === "/dashboard/leads" ||
+          item.href === "/dashboard/admissions" ||
+          item.href === "/dashboard/admission-applications",
+      )
+    : workspaceItems;
+
+  const visibleEducationItems = isNetworkManager
+    ? []
+    : educationItems;
+
+  const visibleBusinessItems = isNetworkManager
+    ? businessItems.filter(
+        (item) =>
+          item.href === "/dashboard/payments" ||
+          item.href === "/dashboard/registration-payments" ||
+          item.href === "/dashboard/growth-network",
+      )
+    : businessItems;
+
+  const closeMobile = () => onMobileClose?.();
 
   const sidebarContent = (
     <div className="flex h-full flex-col">
-      <div className="flex h-[76px] items-center border-b border-slate-100 px-5">
+      <div className="flex h-[76px] items-center border-b border-slate-100 dark:border-slate-800 px-5">
         <Link
           href="/dashboard"
           onClick={closeMobile}
@@ -226,7 +263,7 @@ export default function Sidebar() {
         <button
           type="button"
           onClick={closeMobile}
-          className="ml-auto rounded-xl p-2 text-slate-400 hover:bg-slate-100 lg:hidden"
+          className="ml-auto rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:bg-slate-800 lg:hidden"
           aria-label="Close navigation"
         >
           <X className="h-5 w-5" />
@@ -260,35 +297,37 @@ export default function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-4 pb-5">
         <NavigationSection
           title="Workspace"
-          items={workspaceItems}
+          items={visibleWorkspaceItems}
           pathname={pathname}
           onNavigate={closeMobile}
         />
 
-        <NavigationSection
-          title="Education"
-          items={educationItems}
-          pathname={pathname}
-          onNavigate={closeMobile}
-        />
+        {visibleEducationItems.length > 0 ? (
+          <NavigationSection
+            title="Education"
+            items={visibleEducationItems}
+            pathname={pathname}
+            onNavigate={closeMobile}
+          />
+        ) : null}
 
         <NavigationSection
           title="Business"
-          items={businessItems}
+          items={visibleBusinessItems}
           pathname={pathname}
           onNavigate={closeMobile}
         />
       </nav>
 
-      <div className="border-t border-slate-100 p-4">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <div className="border-t border-slate-800 p-4">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900 p-4">
           <div className="mb-2 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200 dark:ring-slate-700">
               <Sparkles className="h-4 w-4 text-[#2563EB]" />
             </div>
 
             <div>
-              <p className="text-xs font-bold text-slate-900">
+              <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
                 TechSkill AI
               </p>
               <p className="text-[10px] text-slate-400">
@@ -297,7 +336,7 @@ export default function Sidebar() {
             </div>
           </div>
 
-          <p className="text-[11px] leading-5 text-slate-500">
+          <p className="text-[11px] leading-5 text-slate-500 dark:text-slate-400">
             Your education business command center is ready.
           </p>
         </div>
@@ -307,7 +346,7 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[290px] border-r border-slate-200/80 bg-white lg:block">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[290px] border-r border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-950 lg:block">
         {sidebarContent}
       </aside>
 
@@ -325,7 +364,7 @@ export default function Sidebar() {
             />
 
             <motion.aside
-              className="fixed inset-y-0 left-0 z-50 w-[290px] bg-white shadow-2xl lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-[290px] bg-white shadow-2xl dark:bg-slate-950 lg:hidden"
               initial={{ x: -320 }}
               animate={{ x: 0 }}
               exit={{ x: -320 }}
@@ -343,7 +382,7 @@ export default function Sidebar() {
 
       <button
         type="button"
-        onClick={() => setMobileOpen(true)}
+        onClick={() => onMobileOpen?.()}
         className="fixed bottom-5 left-5 z-30 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2563EB] text-white shadow-[0_12px_30px_rgba(37,99,235,0.30)] lg:hidden"
         aria-label="Open navigation"
       >

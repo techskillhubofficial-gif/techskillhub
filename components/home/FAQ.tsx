@@ -5,34 +5,34 @@ import { ChevronDown } from "lucide-react";
 
 const faqs = [
   {
-    question: "Are all programs 100% live?",
+    question: "Who can learn with TechSkillHub?",
     answer:
-      "Yes. Every flagship program is conducted live online with mentors. Session recordings are also available for revision.",
-  },
-  {
-    question: "How long is each program?",
-    answer:
-      "Every flagship program at TechSkill Hub is a structured 9-month career program focused on practical learning, projects, mentorship and career readiness.",
+      "Our learning paths are designed for students, graduates, working professionals and others who want to develop practical skills for today's workplace.",
   },
   {
     question: "Do I need prior experience?",
     answer:
-      "No. Our programs are designed for beginners, students, working professionals and career switchers.",
+      "Prior experience depends on the program and learning path. If you are unsure where to start, you can use Career Guidance to discuss your current stage and goals.",
   },
   {
-    question: "Will I build real projects?",
+    question: "Will I build practical projects?",
     answer:
-      "Yes. Throughout the program you'll build portfolio-ready projects that demonstrate your skills to employers and clients.",
+      "Practical application and project work are part of the TechSkillHub learning approach, helping learners turn concepts into demonstrable work.",
   },
   {
-    question: "What is placement assistance?",
+    question: "How long are the career programs?",
     answer:
-      "We help students with resume building, LinkedIn optimisation, mock interviews, portfolio reviews and career guidance to improve job readiness.",
+      "The current flagship career programs are structured as 9-month learning journeys. Program-specific details are available on each program page.",
   },
   {
-    question: "Can working professionals join?",
+    question: "Is TechSkillHub only for students?",
     answer:
-      "Absolutely. Our live online format is suitable for students as well as working professionals.",
+      "No. The platform is designed for students, graduates and working professionals who want to build or strengthen practical skills.",
+  },
+  {
+    question: "What if I don't know which program to choose?",
+    answer:
+      "You can request Career Guidance and share your current stage, interests and goals. The team can help you understand the available paths before you decide.",
   },
 ];
 
@@ -40,49 +40,56 @@ export function FAQ() {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
-    <section className="bg-white py-24">
+    <section className="bg-white py-20 md:py-24">
       <div className="mx-auto max-w-4xl px-6">
         <div className="mb-12 text-center">
-          <h2 className="text-5xl font-bold text-slate-900">
-            Frequently Asked Questions
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-600">
+            FAQ
+          </p>
+
+          <h2 className="mt-3 text-3xl font-bold tracking-[-0.03em] text-slate-950 md:text-4xl">
+            Questions, answered clearly.
           </h2>
 
-          <p className="mt-4 text-lg text-slate-600">
-            Everything you need to know before starting your journey with
-            TechSkill Hub.
+          <p className="mt-4 text-base leading-7 text-slate-600 md:text-lg">
+            A few things learners commonly want to know before getting started.
           </p>
         </div>
 
-        <div className="space-y-4">
-          {faqs.map((faq, index) => (
-            <div
-              key={index}
-              className="rounded-2xl border border-slate-200"
-            >
-              <button
-                onClick={() =>
-                  setOpen(open === index ? null : index)
-                }
-                className="flex w-full items-center justify-between p-6 text-left"
+        <div className="space-y-3">
+          {faqs.map((faq, index) => {
+            const isOpen = open === index;
+
+            return (
+              <div
+                key={faq.question}
+                className="overflow-hidden rounded-2xl border border-slate-200 bg-white"
               >
-                <span className="text-lg font-semibold">
-                  {faq.question}
-                </span>
+                <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  onClick={() => setOpen(isOpen ? null : index)}
+                  className="flex w-full items-center justify-between gap-5 p-5 text-left md:p-6"
+                >
+                  <span className="text-base font-semibold text-slate-900 md:text-lg">
+                    {faq.question}
+                  </span>
 
-                <ChevronDown
-                  className={`transition ${
-                    open === index ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
+                  <ChevronDown
+                    className={`h-5 w-5 shrink-0 text-slate-400 transition-transform ${
+                      isOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
 
-              {open === index && (
-                <div className="px-6 pb-6 text-slate-600 leading-7">
-                  {faq.answer}
-                </div>
-              )}
-            </div>
-          ))}
+                {isOpen && (
+                  <div className="border-t border-slate-100 px-5 pb-5 pt-4 text-sm leading-7 text-slate-600 md:px-6 md:pb-6">
+                    {faq.answer}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

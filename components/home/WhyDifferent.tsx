@@ -3,102 +3,88 @@
 import { motion } from "framer-motion";
 import {
   Brain,
-  Briefcase,
-  Users,
-  Rocket,
-  GraduationCap,
+  BriefcaseBusiness,
+  FolderKanban,
   Target,
 } from "lucide-react";
 
 const features = [
   {
     icon: Brain,
-    title: "AI Powered Learning",
+    title: "AI-Enabled Learning",
     description:
-      "Learn with AI tools that improve productivity and prepare you for the future workplace.",
+      "Use modern AI tools and workflows as part of relevant learning and practical work.",
   },
   {
-    icon: Briefcase,
-    title: "Career First Approach",
+    icon: FolderKanban,
+    title: "Learn by Building",
     description:
-      "Every class, project and assignment is designed to make you job-ready, not exam-ready.",
+      "Apply concepts through projects and practical tasks that turn learning into demonstrable work.",
   },
   {
-    icon: Users,
-    title: "Live Mentorship",
+    icon: BriefcaseBusiness,
+    title: "Portfolio Development",
     description:
-      "Daily live sessions, office hours and one-to-one guidance from mentors.",
-  },
-  {
-    icon: Rocket,
-    title: "Real Industry Projects",
-    description:
-      "Build business websites, dashboards, AI applications and portfolio projects throughout the program.",
-  },
-  {
-    icon: GraduationCap,
-    title: "Portfolio Driven Learning",
-    description:
-      "Graduate with a portfolio that demonstrates your skills to employers and clients.",
+      "Build a collection of practical work that helps you demonstrate your skills beyond a certificate.",
   },
   {
     icon: Target,
-    title: "Career Accelerator",
+    title: "Career Development",
     description:
-      "Resume building, LinkedIn optimisation, mock interviews and placement guidance during Month 9.",
+      "Get structured guidance around learning paths, portfolio development and preparation for the workplace.",
   },
 ];
 
 export function WhyDifferent() {
   return (
-    <section className="bg-slate-50 py-24">
+    <section className="bg-slate-50 py-20 md:py-24">
       <div className="mx-auto max-w-7xl px-6">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mx-auto mb-16 max-w-3xl text-center"
+          className="mx-auto max-w-3xl text-center"
         >
-          <span className="rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700">
-            Why TechSkill Hub?
+          <span className="inline-flex rounded-full bg-blue-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-blue-700">
+            The TechSkillHub approach
           </span>
 
-          <h2 className="mt-6 text-5xl font-bold text-slate-900">
-            Education Built For The Real World
+          <h2 className="mt-5 text-3xl font-bold tracking-[-0.03em] text-slate-950 md:text-4xl">
+            Built around practical career development.
           </h2>
 
-          <p className="mt-6 text-lg text-slate-600">
-            We don't believe in passive learning. Every student learns through
-            live classes, practical execution, AI-powered workflows and
-            continuous mentorship.
+          <p className="mt-5 text-base leading-7 text-slate-600 md:text-lg">
+            The learning experience connects knowledge with practical
+            application, projects, portfolio development and career
+            preparation.
           </p>
         </motion.div>
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {features.map((feature, index) => {
             const Icon = feature.icon;
 
             return (
-              <motion.div
+              <motion.article
                 key={feature.title}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={{ delay: index * 0.06 }}
                 viewport={{ once: true }}
-                className="rounded-3xl bg-white p-8 shadow-sm transition hover:-translate-y-2 hover:shadow-xl"
+                className="rounded-[24px] border border-slate-200 bg-white p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
               >
-                <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-                  <Icon size={30} />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                  <Icon className="h-6 w-6" />
                 </div>
 
-                <h3 className="text-2xl font-bold text-slate-900">
+                <h3 className="mt-6 text-xl font-bold text-slate-950">
                   {feature.title}
                 </h3>
 
-                <p className="mt-4 leading-7 text-slate-600">
+                <p className="mt-3 text-sm leading-6 text-slate-600">
                   {feature.description}
                 </p>
-              </motion.div>
+              </motion.article>
             );
           })}
         </div>
